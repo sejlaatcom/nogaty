@@ -1,0 +1,13 @@
+# إعدادات الاستضافة (تُنشأ عند التثبيت)
+/config/config.php
+
+# ملفات مرفوعة
+/public/uploads/*
+!/public/uploads/.htaccess
+!/public/uploads/.gitkeep
+
+# ملفات مؤقتة
+/storage/*.log
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,11 @@
+# توجيه جميع الطلبات إلى مجلد public
+# (استخدم هذا الملف إذا كان جذر الموقع هو مجلد المشروع بالكامل)
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+<IfModule mod_dir.c>
+    DirectoryIndex public/index.php index.php
+</IfModule>
