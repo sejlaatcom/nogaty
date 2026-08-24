@@ -1,0 +1,13 @@
+# تحويل الجذر إلى مجلد public إذا لم يكن بالإمكان ضبط Document Root
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^$ public/ [L]
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteCond %{REQUEST_URI} !^/install/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# منع الوصول للمجلدات الحساسة
+RedirectMatch 403 ^/(app|storage|database)(/|$)

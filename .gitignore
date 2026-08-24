@@ -1,0 +1,18 @@
+# إعدادات الاتصال — لا تُرفع للمستودع
+/app/config.php
+
+# الملفات المرفوعة والسجلات
+/storage/uploads/*
+!/storage/uploads/.gitkeep
+/storage/logs/*
+!/storage/logs/.gitkeep
+/storage/temp/*
+!/storage/temp/.gitkeep
+
+# ملفات النظام والمحررات
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/

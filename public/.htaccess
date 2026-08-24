@@ -1,0 +1,16 @@
+# منع تصفح المجلدات
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # توجيه الروابط الجميلة إلى نقطة الدخول
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php [QSA,L]
+</IfModule>
+
+# منع تنفيذ أي ملف PHP داخل مجلد الأصول
+<IfModule mod_php.c>
+    php_flag engine on
+</IfModule>
