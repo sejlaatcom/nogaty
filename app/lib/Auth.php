@@ -48,6 +48,17 @@ final class Auth
         return self::role() === 'admin';
     }
 
+    public static function isStudent(): bool
+    {
+        return self::role() === 'student';
+    }
+
+    /** منسوبو المدرسة (إدارة أو معلم) */
+    public static function isStaff(): bool
+    {
+        return in_array(self::role(), ['admin', 'teacher'], true);
+    }
+
     /** محاولة تسجيل الدخول */
     public static function attempt(string $username, string $password): array
     {
@@ -67,6 +78,9 @@ final class Auth
         }
         if ((int) $user['is_active'] !== 1) {
             return [false, 'هذا الحساب موقوف، يرجى مراجعة إدارة المدرسة.'];
+        }
+        if ($user['role'] === 'student' && !Settings::bool('nafes_enabled')) {
+            return [false, 'منصة نافس متوقفة حالياً، يرجى مراجعة إدارة المدرسة.'];
         }
 
         if (password_needs_rehash($user['password_hash'], PASSWORD_DEFAULT)) {
@@ -130,10 +144,30 @@ final class Auth
         return self::requireRole('teacher');
     }
 
+    public static function requireStudent(): array
+    {
+        return self::requireRole('student');
+    }
+
+    /** يشترط أن يكون المستخدم من منسوبي المدرسة (إدارة أو معلم) */
+    public static function requireStaff(): array
+    {
+        $user = self::requireLogin();
+        if (!in_array($user['role'], ['admin', 'teacher'], true)) {
+            http_response_code(403);
+            exit('ليس لديك صلاحية للوصول لهذه الصفحة.');
+        }
+        return $user;
+    }
+
     /** لوحة التحكم المناسبة لدور المستخدم */
     public static function home(): string
     {
-        return self::isAdmin() ? 'admin/index.php' : 'teacher/index.php';
+        return match (self::role()) {
+            'admin'   => 'admin/index.php',
+            'student' => 'student/index.php',
+            default   => 'teacher/index.php',
+        };
     }
 
     private static function tooManyAttempts(string $ip, string $username): bool

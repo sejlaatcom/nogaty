@@ -23,6 +23,16 @@ final class Settings
         'public_enabled'   => '1',
         'footer_text'      => 'سجل الخطة الأسبوعية',
         'contact_email'    => '',
+        // منصة نافس
+        'nafes_enabled'        => '1',
+        'nafes_title'          => 'منصة نافس للتدريب على الاختبارات الوطنية',
+        'nafes_subject_ids'    => '',   // معرفات مواد نافس (فارغ = كل المواد)
+        'nafes_grade_ids'      => '',   // معرفات صفوف نافس (فارغ = كل الصفوف)
+        'nafes_level_advanced'   => '85',
+        'nafes_level_proficient' => '65',
+        'nafes_level_basic'      => '50',
+        'nafes_practice_size'  => '10',
+        'nafes_student_review' => '1',  // السماح للطالب بمراجعة إجاباته بعد التسليم
     ];
 
     public static function all(): array

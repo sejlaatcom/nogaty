@@ -4,14 +4,15 @@ require __DIR__ . '/../app/bootstrap.php';
 require APP_PATH . '/views/layout.php';
 
 $user = Auth::requireLogin();
-$area = Auth::isAdmin() ? 'admin' : 'teacher';
+$area = match ($user['role']) { 'admin' => 'admin', 'student' => 'student', default => 'teacher' };
 
 if (is_post()) {
     csrf_verify();
 
     if (input('action') === 'profile') {
         Database::update('users', [
-            'name'  => (string) input('name', $user['name']),
+            // اسم الطالب تعتمده الإدارة ولا يعدّله الطالب
+            'name'  => $user['role'] === 'student' ? $user['name'] : ((string) input('name', '') ?: $user['name']),
             'email' => input('email') ?: null,
             'phone' => input('phone') ?: null,
         ], 'id = :id', ['id' => $user['id']]);
@@ -51,10 +52,10 @@ page_start('حسابي', $area, 'profile');
       <form method="post">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="profile">
-        <div class="field"><label>الاسم</label><input type="text" name="name" value="<?= h($user['name']) ?>" required></div>
+        <div class="field"><label>الاسم</label><input type="text" name="name" value="<?= h($user['name']) ?>" required <?= $user['role'] === 'student' ? 'disabled' : '' ?>></div>
         <div class="field"><label>اسم المستخدم</label><input type="text" value="<?= h($user['username']) ?>" disabled></div>
         <div class="field"><label>البريد الإلكتروني</label><input type="email" name="email" value="<?= h($user['email']) ?>"></div>
-        <div class="field"><label>الجوال</label><input type="tel" name="phone" value="<?= h($user['phone']) ?>"></div>
+        <div class="field"><label><?= $user['role'] === 'student' ? 'جوال ولي الأمر' : 'الجوال' ?></label><input type="tel" name="phone" value="<?= h($user['phone']) ?>"></div>
         <button class="btn btn-primary" type="submit">حفظ</button>
       </form>
     </div>

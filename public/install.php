@@ -61,18 +61,9 @@ if (is_post()) {
             ));
             $pdo->exec('USE `' . str_replace('`', '', $form['db_name']) . '`');
 
-            // 2) تنفيذ ملف البنية
-            $sql = file_get_contents(APP_ROOT . '/database/schema.sql');
-            if ($sql === false) {
-                throw new RuntimeException('تعذر قراءة ملف database/schema.sql');
-            }
-            // إزالة التعليقات ثم تنفيذ كل جملة على حدة
-            $sql = preg_replace('/^\s*--.*$/m', '', $sql) ?? $sql;
-            foreach (explode(';', $sql) as $statement) {
-                $statement = trim($statement);
-                if ($statement !== '') {
-                    $pdo->exec($statement);
-                }
+            // 2) تنفيذ ملف البنية (كل جملة على حدة)
+            foreach (Migrator::statements() as $statement) {
+                $pdo->exec($statement);
             }
 
             // 3) كتابة ملف الإعدادات
@@ -85,7 +76,7 @@ if (is_post()) {
                     'password' => $form['db_pass'],
                     'charset'  => 'utf8mb4',
                 ],
-                'app_name' => 'نظام الخطط الأسبوعية',
+                'app_name' => 'نظام الخطط الأسبوعية ومنصة نافس',
                 'timezone' => 'Asia/Riyadh',
                 'debug'    => false,
                 'app_key'  => bin2hex(random_bytes(16)),
@@ -113,8 +104,10 @@ if (is_post()) {
                 'is_active'     => 1,
             ]);
 
+            seed_nafes();
             if ($form['demo']) {
                 seed_demo();
+                seed_nafes_demo();
             }
 
             $done = true;
@@ -178,7 +171,7 @@ if (is_post()) {
         </div>
 
         <label class="flex"><input type="checkbox" name="demo" style="width:auto" <?= $form['demo'] ? 'checked' : '' ?>>
-          إضافة بيانات تجريبية (صفوف ومعلمون وخطط جاهزة للتجربة)</label>
+          إضافة بيانات تجريبية (صفوف ومعلمون وخطط وطلاب وأسئلة نافس جاهزة للتجربة)</label>
 
         <div class="toolbar mt16">
           <button class="btn btn-primary" type="submit">بدء التثبيت</button>

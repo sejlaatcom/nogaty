@@ -48,7 +48,7 @@ if (is_post()) {
                 $data['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
                 $data['must_change_password'] = 1;
             }
-            Database::update('users', $data, 'id = :uid', ['uid' => $id]);
+            Database::update('users', $data, "id = :uid AND role <> 'student'", ['uid' => $id]);
             Activity::log('user_update', 'users', $id, $name);
             flash('success', 'تم تحديث بيانات ' . $name . '.');
         } else {
@@ -98,11 +98,11 @@ if (is_post()) {
 }
 
 $editId = input_int('edit');
-$edit   = $editId ? Database::first('SELECT * FROM users WHERE id = ?', [$editId]) : null;
+$edit   = $editId ? Database::first("SELECT * FROM users WHERE id = ? AND role <> 'student'", [$editId]) : null;
 
 $users = Database::all(
     "SELECT u.*, (SELECT COUNT(*) FROM assignments a WHERE a.teacher_id = u.id) AS assignments_count
-       FROM users u ORDER BY u.role DESC, u.is_active DESC, u.name"
+       FROM users u WHERE u.role <> 'student' ORDER BY u.role DESC, u.is_active DESC, u.name"
 );
 
 page_start('المعلمون والمستخدمون', 'admin', 'teachers');

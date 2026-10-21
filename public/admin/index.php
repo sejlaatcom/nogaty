@@ -38,6 +38,13 @@ $followClasses = $week ? Plans::followUpClasses($weekId) : [];
 page_start('لوحة التحكم', 'admin', 'index');
 ?>
 
+<?php if (Migrator::needed()): ?>
+  <div class="alert alert-warning">
+    تحتوي هذه النسخة على مزايا جديدة (منصة نافس) وتحتاج قاعدة البيانات إلى ترقية.
+    <a href="<?= h(url('admin/nafes_settings.php')) ?>">اذهب إلى إعدادات نافس للترقية بضغطة واحدة</a>.
+  </div>
+<?php endif; ?>
+
 <div class="filters">
   <form method="get">
     <div class="field">

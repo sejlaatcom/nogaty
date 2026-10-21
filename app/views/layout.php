@@ -17,7 +17,7 @@ function nav_items(string $area): array
             'transfer'    => ['استيراد وتصدير', 'admin/transfer.php', '↧'],
             'settings'    => ['إعدادات المدرسة', 'admin/settings.php', '⚙'],
             'logs'        => ['سجل العمليات', 'admin/logs.php', '≡'],
-        ];
+        ] + nafes_nav_items('admin');
     }
 
     if ($area === 'teacher') {
@@ -25,10 +25,42 @@ function nav_items(string $area): array
             'index'   => ['خطط الأسبوع', 'teacher/index.php', '▦'],
             'plans'   => ['جميع خططي', 'teacher/plans.php', '≡'],
             'profile' => ['حسابي', 'profile.php', '☺'],
+        ] + nafes_nav_items('teacher');
+    }
+
+    if ($area === 'student') {
+        return [
+            'index'    => ['الرئيسية', 'student/index.php', '▦'],
+            'profile'  => ['حسابي', 'profile.php', '☺'],
         ];
     }
 
     return [];
+}
+
+/** عناصر منصة نافس في قائمة الإدارة والمعلم (عنصر بمسار فارغ = عنوان قسم) */
+function nafes_nav_items(string $area): array
+{
+    if (!Settings::bool('nafes_enabled') && $area !== 'admin') {
+        return [];
+    }
+    $items = ['_nafes' => ['منصة نافس', null, '']];
+    if ($area === 'admin') {
+        $items['students']       = ['الطلاب', 'admin/students.php', '☻'];
+        $items['nafes_settings'] = ['إعدادات نافس', 'admin/nafes_settings.php', '⚙'];
+    }
+    return $items;
+}
+
+/** وصف دور المستخدم في الشريط العلوي */
+function user_role_label(?array $user): string
+{
+    $role = $user['role'] ?? '';
+    if ($role === 'student') {
+        $classroom = !empty($user['classroom_id']) ? Plans::classroom((int) $user['classroom_id']) : null;
+        return 'طالب' . ($classroom ? ' — ' . Plans::classLabel($classroom) : '');
+    }
+    return $role === 'admin' ? 'إدارة' : 'معلم';
 }
 
 /**
@@ -50,13 +82,13 @@ function page_start(string $title, string $area = 'public', string $active = '')
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="<?= asset('css/app.css') ?>?v=1">
+<link rel="stylesheet" href="<?= asset('css/app.css') ?>?v=2">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📘</text></svg>">
 </head>
 <body class="area-<?= h($area) ?>">
 <?php if ($area === 'print') { return; } ?>
 
-<?php if ($area === 'admin' || $area === 'teacher'): ?>
+<?php if (in_array($area, ['admin', 'teacher', 'student'], true)): ?>
 <div class="app-shell">
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
@@ -67,16 +99,22 @@ function page_start(string $title, string $area = 'public', string $active = '')
       <?php endif; ?>
       <div>
         <strong><?= h($schoolName) ?></strong>
-        <small><?= $area === 'admin' ? 'لوحة إدارة المدرسة' : 'لوحة المعلم' ?></small>
+        <small><?= match ($area) { 'admin' => 'لوحة إدارة المدرسة', 'student' => 'منصة نافس — بوابة الطالب', default => 'لوحة المعلم' } ?></small>
       </div>
     </div>
     <nav class="sidebar-nav">
       <?php foreach (nav_items($area) as $key => [$label, $path, $icon]): ?>
+        <?php if ($path === null): ?>
+          <div class="nav-section"><?= h($label) ?></div>
+        <?php else: ?>
         <a href="<?= h(url($path)) ?>" class="<?= $active === $key ? 'active' : '' ?>">
           <span class="ico"><?= $icon ?></span><?= h($label) ?>
         </a>
+        <?php endif; ?>
       <?php endforeach; ?>
+      <?php if ($area !== 'student'): ?>
       <a href="<?= h(url('index.php')) ?>" target="_blank"><span class="ico">◎</span>واجهة الموقع</a>
+      <?php endif; ?>
     </nav>
     <div class="sidebar-foot">
       <a class="btn btn-ghost btn-block" href="<?= h(url('logout.php')) ?>">تسجيل الخروج</a>
@@ -89,7 +127,7 @@ function page_start(string $title, string $area = 'public', string $active = '')
       <h1><?= h($title) ?></h1>
       <div class="topbar-user">
         <span class="user-name"><?= h($user['name'] ?? '') ?></span>
-        <span class="user-role"><?= Auth::isAdmin() ? 'إدارة' : 'معلم' ?></span>
+        <span class="user-role"><?= h(user_role_label($user)) ?></span>
       </div>
     </header>
     <main class="content">
@@ -112,7 +150,7 @@ function page_start(string $title, string $area = 'public', string $active = '')
         <a href="<?= h(url(Auth::home())) ?>">لوحة التحكم</a>
         <a href="<?= h(url('logout.php')) ?>">خروج</a>
       <?php else: ?>
-        <a class="btn btn-primary btn-sm" href="<?= h(url('login.php')) ?>">دخول المعلمين والإدارة</a>
+        <a class="btn btn-primary btn-sm" href="<?= h(url('login.php')) ?>">تسجيل الدخول</a>
       <?php endif; ?>
     </nav>
   </div>
@@ -138,7 +176,7 @@ function page_end(string $area = 'public'): void
         return;
     }
 
-    if ($area === 'admin' || $area === 'teacher') {
+    if (in_array($area, ['admin', 'teacher', 'student'], true)) {
         ?>
     </main>
   </div>
@@ -152,7 +190,7 @@ function page_end(string $area = 'public'): void
   </div>
 </footer>
 <?php } ?>
-<script src="<?= asset('js/app.js') ?>?v=1"></script>
+<script src="<?= asset('js/app.js') ?>?v=2"></script>
 </body>
 </html>
 <?php

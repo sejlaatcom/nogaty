@@ -1,6 +1,7 @@
 -- =====================================================================
---  نظام الخطط الأسبوعية للمعلمين  |  Weekly Teaching Plans System
+--  نظام الخطط الأسبوعية للمعلمين + منصة نافس  |  Weekly Plans & Nafes Platform
 --  بنية قاعدة البيانات (MySQL / MariaDB)
+--  آمن لإعادة التنفيذ: كل الجداول بصيغة CREATE TABLE IF NOT EXISTS
 -- =====================================================================
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -16,7 +17,7 @@ CREATE TABLE IF NOT EXISTS `settings` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
--- المستخدمون (مدير المدرسة / وكيل / معلم)
+-- المستخدمون (مدير المدرسة / وكيل / معلم / طالب)
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `users` (
   `id`             INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -27,7 +28,8 @@ CREATE TABLE IF NOT EXISTS `users` (
   `national_id`    VARCHAR(20)  NULL,
   `job_title`      VARCHAR(80)  NULL,
   `password_hash`  VARCHAR(255) NOT NULL,
-  `role`           ENUM('admin','teacher') NOT NULL DEFAULT 'teacher',
+  `role`           ENUM('admin','teacher','student') NOT NULL DEFAULT 'teacher',
+  `classroom_id`   INT UNSIGNED NULL,             -- فصل الطالب (للطلاب فقط)
   `is_active`      TINYINT(1)   NOT NULL DEFAULT 1,
   `must_change_password` TINYINT(1) NOT NULL DEFAULT 0,
   `last_login_at`  DATETIME     NULL,
@@ -35,7 +37,8 @@ CREATE TABLE IF NOT EXISTS `users` (
   `updated_at`     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_users_username` (`username`),
-  KEY `idx_users_role` (`role`, `is_active`)
+  KEY `idx_users_role` (`role`, `is_active`),
+  KEY `idx_users_classroom` (`classroom_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------

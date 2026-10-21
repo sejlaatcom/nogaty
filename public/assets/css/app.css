@@ -258,3 +258,21 @@ table.sheet-table tr.missing td{color:#94a3b8;font-style:italic}
   .sign-box{padding:4px 10px;min-width:150px}
   a{color:inherit;text-decoration:none}
 }
+
+/* =====================================================================
+   منصة نافس
+   ===================================================================== */
+.sidebar-nav .nav-section{margin:14px 12px 6px;padding-top:10px;border-top:1px solid rgba(255,255,255,.15);
+  font-size:.75rem;font-weight:700;letter-spacing:.3px;color:rgba(255,255,255,.65)}
+.badge-navy{background:#e2e8f0;color:var(--navy)}
+.level-advanced{background:#ede9fe;color:#6d28d9}
+.login-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.login-card{border:1px dashed #94a3b8;border-radius:10px;padding:10px 12px;font-size:.85rem;page-break-inside:avoid;background:#fff}
+.login-card strong{display:block;font-size:.95rem;margin-bottom:4px}
+.login-card code{font-size:.95rem;direction:ltr;unicode-bidi:embed;background:#f1f5f9;padding:1px 6px;border-radius:5px}
+@media print{
+  .content:has(#login-cards) > :not(#login-cards){display:none !important}
+  #login-cards{border:none;box-shadow:none}
+  .login-cards{grid-template-columns:repeat(3,1fr);gap:6px}
+  .login-card{font-size:9px;padding:6px}
+}

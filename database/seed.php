@@ -183,3 +183,58 @@ function seed_demo(): void
         $index++;
     }
 }
+
+/** إعدادات منصة نافس الافتراضية: المواد والصفوف المستهدفة */
+function seed_nafes(): void
+{
+    $subjectIds = [];
+    foreach (['لغتي', 'الرياضيات', 'العلوم'] as $name) {
+        $id = (int) Database::value('SELECT id FROM subjects WHERE name = ?', [$name], 0);
+        if ($id) {
+            $subjectIds[] = $id;
+        }
+    }
+    $gradeIds = [];
+    foreach (['الثالث الابتدائي', 'السادس الابتدائي', 'الثالث المتوسط'] as $name) {
+        $id = (int) Database::value('SELECT id FROM grades WHERE name = ?', [$name], 0);
+        if ($id) {
+            $gradeIds[] = $id;
+        }
+    }
+    Settings::setMany([
+        'nafes_subject_ids' => implode(',', $subjectIds),
+        'nafes_grade_ids'   => implode(',', $gradeIds),
+    ]);
+}
+
+/** بيانات نافس التجريبية: طلاب لفصول صفوف نافس */
+function seed_nafes_demo(): void
+{
+    $first = ['عبدالله', 'محمد', 'فيصل', 'سلمان', 'خالد', 'يزن', 'ريان', 'مشعل', 'عبدالرحمن', 'نواف', 'راكان', 'مازن'];
+    $last  = ['العتيبي', 'القحطاني', 'الحربي', 'الغامدي', 'الشهري', 'الدوسري', 'المطيري', 'الزهراني', 'السبيعي', 'العنزي'];
+
+    $gradeIds = Nafes::idList(Settings::get('nafes_grade_ids'));
+    if (!$gradeIds) {
+        return;
+    }
+    $in = implode(',', $gradeIds);
+    $classrooms = Database::all("SELECT c.id FROM classrooms c WHERE c.grade_id IN ($in) ORDER BY c.id");
+
+    $n = 0;
+    foreach ($classrooms as $classroom) {
+        for ($i = 0; $i < 8; $i++, $n++) {
+            $username = 'st' . str_pad((string) ($n + 1), 3, '0', STR_PAD_LEFT);
+            if (Database::value('SELECT id FROM users WHERE username = ?', [$username])) {
+                continue;
+            }
+            Database::insert('users', [
+                'name'          => $first[$n % count($first)] . ' ' . $first[($n * 7 + 3) % count($first)] . ' ' . $last[($n * 3) % count($last)],
+                'username'      => $username,
+                'password_hash' => password_hash('123456', PASSWORD_DEFAULT),
+                'role'          => 'student',
+                'job_title'     => 'طالب',
+                'classroom_id'  => $classroom['id'],
+            ]);
+        }
+    }
+}

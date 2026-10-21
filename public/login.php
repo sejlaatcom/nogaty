@@ -33,7 +33,7 @@ if (is_post()) {
   <form class="auth-card" method="post">
     <?= csrf_field() ?>
     <h1><?= h(Settings::get('school_name')) ?></h1>
-    <p class="sub">نظام الخطط الأسبوعية — دخول المعلمين والإدارة</p>
+    <p class="sub">نظام الخطط الأسبوعية ومنصة نافس — دخول المعلمين والإدارة والطلاب</p>
 
     <?php if ($error !== ''): ?>
       <div class="alert alert-error"><?= h($error) ?></div>
