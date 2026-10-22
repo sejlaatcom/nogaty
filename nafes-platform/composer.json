@@ -1,0 +1,23 @@
+{
+    "name": "psbn/nafes-platform",
+    "description": "منصة التدريب على اختبارات نافس — مجمع الأمير سعود بن نايف التعليمي بالدمام",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.2",
+        "ext-pdo": "*",
+        "ext-mbstring": "*",
+        "ext-zip": "*",
+        "ext-xml": "*",
+        "phpoffice/phpspreadsheet": "^2.2",
+        "mpdf/mpdf": "^8.2"
+    },
+    "autoload": {
+        "psr-4": { "App\\": "app/" },
+        "files": ["app/Helpers/functions.php"]
+    },
+    "scripts": {
+        "test": "php tests/run.php"
+    },
+    "config": { "optimize-autoloader": true, "sort-packages": true }
+}

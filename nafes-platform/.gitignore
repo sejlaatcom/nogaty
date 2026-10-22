@@ -1,0 +1,12 @@
+/vendor/
+/.env
+/storage/installed.lock
+/storage/logs/*
+/storage/imports/*
+/storage/exports/*
+/storage/backups/*
+/storage/uploads/*
+/storage/cache/*
+!/storage/**/.gitkeep
+.DS_Store
+.phpunit.result.cache
