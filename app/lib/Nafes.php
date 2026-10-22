@@ -81,6 +81,12 @@ final class Nafes
         );
     }
 
+    /** هل للطالب محاولات مسجلة؟ (لا يُحذف حسابه حفاظاً على النتائج) */
+    public static function studentHasRecords(int $studentId): bool
+    {
+        return (bool) Database::value('SELECT 1 FROM nafes_attempts WHERE student_id = ? LIMIT 1', [$studentId]);
+    }
+
     /** الفصول التي يستطيع المستخدم متابعتها: الإدارة كل الفصول، والمعلم فصوله المسندة */
     public static function staffClassrooms(array $user): array
     {

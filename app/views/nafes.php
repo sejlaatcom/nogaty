@@ -61,7 +61,7 @@ function option_letter(int $index): string
 }
 
 /** ترقيم الصفحات */
-function pagination_html(int $page, int $pages, array $query): string
+function pagination_html(int $page, int $pages, array $query, string $key = 'page'): string
 {
     if ($pages <= 1) {
         return '';
@@ -74,8 +74,84 @@ function pagination_html(int $page, int $pages, array $query): string
             }
             continue;
         }
-        $link  = '?' . http_build_query(['page' => $i] + $query);
+        $link  = '?' . http_build_query([$key => $i] + $query);
         $html .= $i === $page ? '<span class="current">' . $i . '</span>' : '<a href="' . h($link) . '">' . $i . '</a>';
     }
     return $html . '</div>';
+}
+
+/** حلقة النتيجة مع لون المستوى */
+function score_ring(float $percent, string $caption = ''): string
+{
+    $color = match (Nafes::levelKey($percent)) {
+        'advanced' => '#7c3aed', 'proficient' => 'var(--green)', 'basic' => '#d97706', default => 'var(--red)',
+    };
+    return '<div class="score-ring" style="--p:' . round($percent) . ';--ring-color:' . $color . '"><div><b>'
+        . Nafes::pct($percent) . '</b><small>' . h($caption) . '</small></div></div>';
+}
+
+/** شريط إتقان مهارة */
+function skill_bar(string $label, ?float $percent, string $extra = ''): string
+{
+    $key = Nafes::levelKey($percent);
+    return '<div class="skill-bar"><span>' . h($label) . ($extra !== '' ? ' <small>' . h($extra) . '</small>' : '') . '</span>'
+        . '<div class="progress"><span class="lv-' . $key . '" style="width:' . max(2, (int) round($percent ?? 0)) . '%"></span></div>'
+        . '<b>' . Nafes::pct($percent) . '</b></div>';
+}
+
+/** ملخص نتيجة محاولة ومراجعة إجاباتها (للطالب والمعلم) */
+function render_attempt_result(array $attempt, bool $showReview): void
+{
+    $percent   = (float) $attempt['percent'];
+    $breakdown = Exams::skillBreakdown((int) $attempt['id']);
+    ?>
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-body text-center">
+          <?= score_ring($percent, (int) $attempt['score'] . ' من ' . (int) $attempt['total']) ?>
+          <p class="mb0">المستوى: <?= Nafes::levelBadge($percent) ?></p>
+          <p class="text-muted mb0">التسليم: <?= h((string) $attempt['submitted_at']) ?> · المدة: <?= h(Exams::durationLabel($attempt)) ?></p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>الأداء في المهارات</h2></div>
+        <div class="card-body">
+          <?php foreach ($breakdown as $row): ?>
+            <?= skill_bar(($row['skill_code'] ? $row['skill_code'] . ' — ' : '') . $row['skill_name'], (float) $row['percent'], (int) $row['correct'] . '/' . (int) $row['total']) ?>
+          <?php endforeach; ?>
+          <?php $weak = array_filter($breakdown, static fn ($r) => Nafes::levelKey((float) $r['percent']) === 'below' && $r['skill_id']); ?>
+          <?php if ($weak): ?>
+            <p class="help mt16 mb0">مهارات تحتاج إلى مزيد من التدريب: <?= h(implode('، ', array_map(static fn ($r) => $r['skill_name'], $weak))) ?></p>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
+
+    <?php if (!$showReview) { return; } ?>
+    <div class="card">
+      <div class="card-head"><h2>مراجعة الإجابات</h2></div>
+      <div class="card-body">
+        <?php foreach (Exams::attemptQuestions((int) $attempt['id']) as $i => $q): ?>
+          <div class="review-q <?= (int) $q['is_correct'] === 1 ? 'ok' : 'no' ?>">
+            <div class="flex mb16">
+              <strong>السؤال <?= $i + 1 ?></strong>
+              <?= (int) $q['is_correct'] === 1 ? '<span class="badge badge-green">✓ صحيحة</span>' : ($q['option_id'] === null ? '<span class="badge badge-gray">لم تتم الإجابة</span>' : '<span class="badge badge-red">✗ خاطئة</span>') ?>
+              <?php if ($q['skill_name']): ?><small class="text-muted"><?= h($q['skill_name']) ?></small><?php endif; ?>
+            </div>
+            <?php question_body($q, $q['passage'], false); ?>
+            <ol class="q-options">
+              <?php foreach ($q['options'] as $j => $option): ?>
+                <?php
+                $class = (int) $option['is_correct'] === 1 ? 'correct' : ((int) $q['option_id'] === (int) $option['id'] ? 'wrong' : '');
+                ?>
+                <li class="<?= $class ?>"><span class="opt-letter"><?= option_letter($j) ?></span><?= h($option['body']) ?>
+                  <?= (int) $q['option_id'] === (int) $option['id'] ? ' <small>(إجابتك)</small>' : '' ?></li>
+              <?php endforeach; ?>
+            </ol>
+            <?php if ($q['explanation']): ?><div class="q-explain"><b>التفسير:</b> <?= nl2br_e($q['explanation']) ?></div><?php endif; ?>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    </div>
+    <?php
 }

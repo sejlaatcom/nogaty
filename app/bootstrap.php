@@ -74,6 +74,7 @@ require APP_PATH . '/lib/Importer.php';
 require APP_PATH . '/lib/Migrator.php';
 require APP_PATH . '/lib/Nafes.php';
 require APP_PATH . '/lib/QuestionBank.php';
+require APP_PATH . '/lib/Exams.php';
 
 Database::configure($config['db'] ?? []);
 $GLOBALS['config'] = $config;

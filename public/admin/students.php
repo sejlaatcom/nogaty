@@ -150,9 +150,14 @@ if (is_post()) {
     }
 
     if ($action === 'delete' && $id) {
-        Database::delete('users', "id = ? AND role = 'student'", [$id]);
-        Activity::log('student_delete', 'users', $id);
-        flash('success', 'تم حذف حساب الطالب.');
+        if (Nafes::studentHasRecords($id)) {
+            Database::update('users', ['is_active' => 0], "id = :uid AND role = 'student'", ['uid' => $id]);
+            flash('warning', 'للطالب نتائج مسجلة، تم إيقاف الحساب بدلاً من حذفه للحفاظ على السجلات.');
+        } else {
+            Database::delete('users', "id = ? AND role = 'student'", [$id]);
+            Activity::log('student_delete', 'users', $id);
+            flash('success', 'تم حذف حساب الطالب.');
+        }
         redirect($backUrl);
     }
 

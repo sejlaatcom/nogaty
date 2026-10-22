@@ -31,6 +31,9 @@ function nav_items(string $area): array
     if ($area === 'student') {
         return [
             'index'    => ['الرئيسية', 'student/index.php', '▦'],
+            'tests'    => ['اختباراتي', 'student/tests.php', '✎'],
+            'practice' => ['التدريب الذاتي', 'student/practice.php', '↻'],
+            'results'  => ['نتائجي', 'student/results.php', '★'],
             'profile'  => ['حسابي', 'profile.php', '☺'],
         ];
     }
@@ -49,6 +52,7 @@ function nafes_nav_items(string $area): array
         'nafes_bank'     => ['بنك الأسئلة', 'nafes/questions.php', '؟'],
         'nafes_skills'   => ['المجالات والمهارات', 'nafes/skills.php', '◈'],
         'nafes_passages' => ['نصوص القراءة', 'nafes/passages.php', '¶'],
+        'nafes_tests'    => ['الاختبارات', 'nafes/tests.php', '✎'],
     ];
     if ($area === 'admin') {
         $items['students']       = ['الطلاب', 'admin/students.php', '☻'];
