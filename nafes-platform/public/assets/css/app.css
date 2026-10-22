@@ -259,6 +259,10 @@ th.sort-desc::after{content:'\2193';opacity:.9}
   .exam-wrap{grid-template-columns:1fr}
   .exam-sidebar{position:static;order:-1}
   .qnav{grid-template-columns:repeat(8,1fr)}
+  .exam-sidebar .card-body{padding:10px 12px}
+  .exam-sidebar .qnav{display:flex;overflow-x:auto;gap:6px;padding-bottom:4px}
+  .exam-sidebar .qnav button{flex:0 0 38px;height:38px}
+  .exam-sidebar .legend,.exam-sidebar [data-review],.exam-sidebar .qnav-title{display:none}
 }
 @media (max-width:575.98px){
   .qnav{grid-template-columns:repeat(6,1fr)}

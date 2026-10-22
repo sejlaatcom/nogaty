@@ -230,6 +230,10 @@ final class ImportController extends Controller
 
     private function validateFile(Importer $importer, array $state): array
     {
+        if (!is_array($state['mapping'] ?? null)) {
+            // تخطي خطوة المطابقة (رابط مباشر أو جلسة قديمة)
+            throw new HttpException(422, 'حدّد مطابقة الأعمدة أولاً من خطوة «مطابقة الأعمدة».');
+        }
         $rows = Spreadsheet::read(STORAGE_PATH . '/imports/' . $state['file'], $state['sheet'] === 'CSV' ? null : $state['sheet']);
         $records = $importer->mapRows($rows, $state['mapping'], (bool) $state['header']);
         if (count($records) > 3000) {

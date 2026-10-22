@@ -251,6 +251,14 @@ function rich_text(?string $text): string
     return preg_replace('/(<br>\s*)+$/u', '', $out) ?? $out;
 }
 
+/** نص مبسط بدون رموز التنسيق (للقوائم والملخصات والتصدير) */
+function plain_text(string $text): string
+{
+    $text = preg_replace(['/\\\\frac\{([^{}]*)\}\{([^{}]*)\}/u', '/\\\\sqrt\{([^{}]*)\}/u', '/\^\{([^{}]*)\}/u', '/_\{([^{}]*)\}/u', '/\*\*(.+?)\*\*/u'],
+        ['$1/$2', '√$1', '^$1', '$1', '$1'], $text) ?? $text;
+    return trim(preg_replace('/\s+/u', ' ', strip_tags($text)) ?? $text);
+}
+
 function rich_inline(string $line): string
 {
     $s = e($line);

@@ -53,6 +53,9 @@ final class Levels
 
     public static function bar(?float $percent): string
     {
+        if ($percent === null) {
+            return '<div class="progress" title="لا توجد بيانات"></div>';
+        }
         $key = self::key($percent);
         return '<div class="progress" role="progressbar" aria-valuenow="' . (int) round($percent ?? 0) . '" aria-valuemin="0" aria-valuemax="100">'
             . '<div class="progress-bar bar-' . $key . '" style="width:' . max(2, (int) round($percent ?? 0)) . '%"></div></div>';

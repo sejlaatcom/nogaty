@@ -136,3 +136,44 @@ $router->group(['middleware' => ['auth', 'password']], static function ($r) {
         $r->post('/questions/{id}/revisions/{rid}/restore', [QuestionController::class, 'restore'], ['can:questions.create']);
     });
 });
+
+/* ======================= المرحلة 4: الاختبارات وبوابة الطالب ======================= */
+use App\Controllers\StudentPortalController;
+use App\Controllers\TestController;
+
+$router->group(['middleware' => ['auth', 'password', 'can:student.portal']], static function ($r) {
+    $r->get('/student', [StudentPortalController::class, 'home']);
+    $r->get('/student/tests', [StudentPortalController::class, 'tests']);
+    $r->get('/student/tests/{id}', [StudentPortalController::class, 'intro']);
+    $r->post('/student/tests/{id}/start', [StudentPortalController::class, 'start']);
+    $r->get('/student/attempts/{id}', [StudentPortalController::class, 'exam']);
+    $r->post('/student/attempts/{id}/save', [StudentPortalController::class, 'save']);
+    $r->post('/student/attempts/{id}/submit', [StudentPortalController::class, 'submit']);
+    $r->get('/student/attempts/{id}/done', [StudentPortalController::class, 'done']);
+    $r->get('/student/results', [StudentPortalController::class, 'results']);
+    $r->get('/student/results/{id}', [StudentPortalController::class, 'result']);
+    $r->get('/student/practice', [StudentPortalController::class, 'practice']);
+    $r->post('/student/practice/start', [StudentPortalController::class, 'startPractice']);
+    $r->get('/student/progress', [StudentPortalController::class, 'progress']);
+});
+
+$router->group(['middleware' => ['auth', 'password', 'can:tests.view']], static function ($r) {
+    $r->get('/tests', [TestController::class, 'index']);
+    $r->get('/tests/create', [TestController::class, 'create'], ['can:tests.create']);
+    $r->post('/tests', [TestController::class, 'store'], ['can:tests.create']);
+    $r->get('/tests/{id}', [TestController::class, 'show']);
+    $r->get('/tests/{id}/edit', [TestController::class, 'edit'], ['can:tests.create']);
+    $r->post('/tests/{id}', [TestController::class, 'update'], ['can:tests.create']);
+    $r->post('/tests/{id}/questions', [TestController::class, 'questions'], ['can:tests.create']);
+    $r->post('/tests/{id}/assign', [TestController::class, 'assign'], ['can:tests.create']);
+    $r->post('/tests/{id}/status', [TestController::class, 'status'], ['can:tests.create']);
+    $r->post('/tests/{id}/release', [TestController::class, 'release'], ['can:tests.create']);
+    $r->post('/tests/{id}/duplicate', [TestController::class, 'duplicate'], ['can:tests.create']);
+    $r->post('/tests/{id}/delete', [TestController::class, 'destroy'], ['can:tests.create']);
+    $r->get('/tests/{id}/results', [TestController::class, 'results'], ['can:results.view']);
+    $r->post('/tests/{id}/reset-attempt', [TestController::class, 'resetAttempt'], ['can:results.grade']);
+    $r->get('/tests/{id}/paper', [TestController::class, 'paper']);
+    $r->get('/attempts/{id}', [TestController::class, 'attempt'], ['can:results.view']);
+    $r->get('/grading', [TestController::class, 'gradingQueue'], ['can:results.grade']);
+    $r->post('/grading/{id}', [TestController::class, 'grade'], ['can:results.grade']);
+});

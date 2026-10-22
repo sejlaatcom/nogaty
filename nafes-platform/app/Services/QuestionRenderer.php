@@ -8,6 +8,7 @@ namespace App\Services;
  *  preview — للمعلم مع الإجابات الصحيحة
  *  take    — للطالب أثناء الاختبار (بدون أي إشارة للإجابة الصحيحة)
  *  review  — بعد التسليم: إجابة الطالب والإجابة الصحيحة والتفسير (حسب الإعدادات)
+ *  paper   — نسخة ورقية للطباعة بدون إجابات
  */
 final class QuestionRenderer
 {
@@ -100,7 +101,9 @@ final class QuestionRenderer
                 foreach ($options as $o) {
                     $id = (int) $o['id'];
                     $html .= '<div class="match-row"><div class="left">' . rich_inline($o['body']) . '</div><i class="bi bi-arrow-left text-muted"></i>';
-                    if ($mode === 'take') {
+                    if ($mode === 'paper') {
+                        $html .= '<div class="left">( &nbsp;&nbsp; )</div>';
+                    } elseif ($mode === 'take') {
                         $html .= '<select class="form-select" name="' . e($name) . '[' . $id . ']"><option value="">— اختر —</option>';
                         foreach ($right as $r) {
                             $html .= '<option value="' . (int) $r['id'] . '"' . (($pairs[$id] ?? 0) === (int) $r['id'] ? ' selected' : '') . '>' . e($r['match_text']) . '</option>';
@@ -121,6 +124,9 @@ final class QuestionRenderer
                     }
                     $html .= '</div>';
                 }
+                if ($mode === 'paper') {
+                    $html .= '<div class="small mt-2">القائمة: ' . implode(' · ', array_map(static fn ($r, $i) => self::letter($i) . ') ' . e($r['match_text']), $right, array_keys($right))) . '</div>';
+                }
                 break;
 
             case 'ordering':
@@ -137,6 +143,13 @@ final class QuestionRenderer
                     $html .= '</div>';
                 } else {
                     $list = $mode === 'preview' ? self::byPosition($q['options']) : $items;
+                    if ($mode === 'paper') {
+                        $html .= '<div class="small text-muted mb-1">اكتب رقم الترتيب أمام كل عنصر:</div>';
+                        foreach ($list as $o) {
+                            $html .= '<div class="py-1">( &nbsp;&nbsp; ) ' . rich_inline($o['body']) . '</div>';
+                        }
+                        break;
+                    }
                     $html .= '<ol class="list-group list-group-numbered">';
                     foreach ($list as $i => $o) {
                         $ok = (int) $o['position'] === $i + 1;
@@ -144,7 +157,7 @@ final class QuestionRenderer
                     }
                     $html .= '</ol>';
                     if ($mode === 'review' && $showCorrect) {
-                        $html .= '<div class="small mt-2 text-success">الترتيب الصحيح: ' . e(implode(' ← ', array_map(static fn ($o) => strip_tags($o['body']), self::byPosition($q['options'])))) . '</div>';
+                        $html .= '<div class="small mt-2 text-success">الترتيب الصحيح: ' . e(implode(' ← ', array_map(static fn ($o) => plain_text($o['body']), self::byPosition($q['options'])))) . '</div>';
                     }
                 }
                 break;
@@ -153,6 +166,8 @@ final class QuestionRenderer
                 $text = (string) ($answer['text'] ?? '');
                 if ($mode === 'take') {
                     $html .= '<input type="text" class="form-control form-control-lg" name="' . e($name) . '" value="' . e($text) . '" maxlength="300" placeholder="اكتب إجابتك هنا" autocomplete="off">';
+                } elseif ($mode === 'paper') {
+                    $html .= '<div class="border-bottom pt-4"></div>';
                 } else {
                     if ($mode === 'review') {
                         $html .= '<div class="border rounded-3 p-2 mb-2">إجابتك: <b>' . e($text !== '' ? $text : '—') . '</b></div>';
