@@ -47,3 +47,58 @@ $router->group(['middleware' => ['auth', 'password']], static function ($r) {
         $r->post('/users/{id}/toggle', [UserController::class, 'toggle']);
     });
 });
+
+/* ======================= المرحلة 2: الهيكل والطلاب والمعلمون والاستيراد ======================= */
+use App\Controllers\ImportController;
+use App\Controllers\StructureController;
+use App\Controllers\StudentController;
+use App\Controllers\TeacherController;
+
+$router->group(['middleware' => ['auth', 'password']], static function ($r) {
+    $r->group(['middleware' => ['can:structure.manage']], static function ($r) {
+        $r->get('/structure', [StructureController::class, 'index']);
+        $r->post('/structure/years', [StructureController::class, 'saveYear']);
+        $r->post('/structure/years/{id}/current', [StructureController::class, 'setCurrentYear']);
+        $r->post('/structure/years/{id}/archive', [StructureController::class, 'archiveYear']);
+        $r->post('/structure/grades', [StructureController::class, 'saveGrade']);
+        $r->post('/structure/classes', [StructureController::class, 'saveClass']);
+        $r->post('/structure/classes/{id}/toggle', [StructureController::class, 'toggleClass']);
+        $r->post('/structure/classes/{id}/delete', [StructureController::class, 'deleteClass']);
+        $r->post('/structure/subjects', [StructureController::class, 'saveSubject']);
+    });
+
+    $r->get('/students', [StudentController::class, 'index'], ['can:students.view']);
+    $r->get('/students/export', [StudentController::class, 'export'], ['can:students.view']);
+    $r->get('/students/cards', [StudentController::class, 'cards'], ['can:students.manage']);
+    $r->get('/students/create', [StudentController::class, 'create'], ['can:students.manage']);
+    $r->post('/students', [StudentController::class, 'store'], ['can:students.manage']);
+    $r->post('/students/bulk', [StudentController::class, 'bulk'], ['can:students.manage']);
+    $r->get('/students/{id}', [StudentController::class, 'show'], ['can:students.view']);
+    $r->get('/students/{id}/edit', [StudentController::class, 'edit'], ['can:students.manage']);
+    $r->post('/students/{id}', [StudentController::class, 'update'], ['can:students.manage']);
+    $r->post('/students/{id}/transfer', [StudentController::class, 'transfer'], ['can:students.manage']);
+    $r->post('/students/{id}/delete', [StudentController::class, 'destroy'], ['can:students.manage']);
+
+    $r->get('/teachers', [TeacherController::class, 'index'], ['can:teachers.view']);
+    $r->get('/teachers/export', [TeacherController::class, 'export'], ['can:teachers.view']);
+    $r->get('/teachers/create', [TeacherController::class, 'create'], ['can:teachers.manage']);
+    $r->post('/teachers', [TeacherController::class, 'store'], ['can:teachers.manage']);
+    $r->post('/teachers/copy-assignments', [TeacherController::class, 'copyAssignments'], ['can:teachers.manage']);
+    $r->get('/teachers/{id}', [TeacherController::class, 'show'], ['can:teachers.view']);
+    $r->get('/teachers/{id}/edit', [TeacherController::class, 'edit'], ['can:teachers.manage']);
+    $r->post('/teachers/{id}', [TeacherController::class, 'update'], ['can:teachers.manage']);
+    $r->post('/teachers/{id}/assignments', [TeacherController::class, 'assign'], ['can:teachers.manage']);
+    $r->post('/teachers/{id}/assignments/{aid}/delete', [TeacherController::class, 'unassign'], ['can:teachers.manage']);
+    $r->post('/teachers/{id}/toggle', [TeacherController::class, 'toggle'], ['can:teachers.manage']);
+    $r->post('/teachers/{id}/reset-password', [TeacherController::class, 'resetPassword'], ['can:teachers.manage']);
+
+    // معالج الاستيراد (الصلاحية يتحقق منها المستورد نفسه)
+    $r->get('/import/{kind}', [ImportController::class, 'upload']);
+    $r->post('/import/{kind}', [ImportController::class, 'store']);
+    $r->get('/import/{kind}/template', [ImportController::class, 'template']);
+    $r->get('/import/{kind}/map', [ImportController::class, 'map']);
+    $r->post('/import/{kind}/map', [ImportController::class, 'saveMap']);
+    $r->get('/import/{kind}/preview', [ImportController::class, 'preview']);
+    $r->post('/import/{kind}/run', [ImportController::class, 'run']);
+    $r->get('/import/{kind}/report/{id}', [ImportController::class, 'report']);
+});
