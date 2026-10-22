@@ -19,6 +19,12 @@ if (is_post()) {
     $id     = input_int('id');
     $name   = (string) input('name', '');
 
+    // حذف المجالات والمهارات يؤثر في أسئلة الجميع وتقاريرهم — للإدارة فقط
+    if (in_array($action, ['delete_domain', 'delete_skill'], true) && $user['role'] !== 'admin') {
+        flash('error', 'حذف المجالات والمهارات متاح لإدارة المدرسة فقط.');
+        redirect($back);
+    }
+
     if ($action === 'save_domain') {
         if ($name === '') {
             flash('error', 'اسم المجال مطلوب.');
@@ -99,11 +105,13 @@ page_start('المجالات والمهارات', nafes_area(), 'nafes_skills');
       <button class="btn btn-sm btn-outline">حفظ</button>
       <?php if ($domain['grade_id'] === null): ?><span class="badge badge-gray">لكل الصفوف</span><?php endif; ?>
     </form>
+    <?php if ($user['role'] === 'admin'): ?>
     <form method="post">
       <?= csrf_field() ?>
       <input type="hidden" name="id" value="<?= (int) $domain['id'] ?>">
       <button class="btn btn-sm btn-danger" name="action" value="delete_domain" data-confirm="حذف المجال وكل مهاراته؟">حذف المجال</button>
     </form>
+    <?php endif; ?>
   </div>
   <div class="card-body tight">
     <table class="data">
@@ -132,11 +140,13 @@ page_start('المجالات والمهارات', nafes_area(), 'nafes_skills');
             <td class="actions">
               <a class="btn btn-sm btn-outline" href="<?= h(url($back . '&edit_skill=' . (int) $skill['id'])) ?>">تعديل</a>
               <a class="btn btn-sm btn-outline" href="<?= h(url('nafes/question.php?subject=' . $subjectId . '&grade=' . $gradeId . '&skill=' . (int) $skill['id'])) ?>">+ سؤال</a>
+              <?php if ($user['role'] === 'admin'): ?>
               <form method="post" style="display:inline">
                 <?= csrf_field() ?>
                 <input type="hidden" name="id" value="<?= (int) $skill['id'] ?>">
                 <button class="btn btn-sm btn-danger" name="action" value="delete_skill" data-confirm="حذف المهارة؟ الأسئلة المرتبطة بها تبقى بدون مهارة.">حذف</button>
               </form>
+              <?php endif; ?>
             </td>
           </tr>
         <?php endif; ?>
