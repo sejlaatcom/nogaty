@@ -108,6 +108,7 @@ if (is_post()) {
             if ($form['demo']) {
                 seed_demo();
                 seed_nafes_demo();
+                seed_nafes_demo_results();
             }
 
             $done = true;

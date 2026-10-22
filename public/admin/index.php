@@ -174,4 +174,33 @@ page_start('لوحة التحكم', 'admin', 'index');
   </div>
 </div>
 
+<?php if (Settings::bool('nafes_enabled') && !Migrator::needed()): ?>
+<?php
+$nafes = Database::first(
+    "SELECT (SELECT COUNT(*) FROM users WHERE role = 'student' AND is_active = 1) AS students,
+            (SELECT COUNT(*) FROM nafes_questions WHERE is_active = 1) AS questions,
+            (SELECT COUNT(*) FROM nafes_tests WHERE status = 'published') AS tests,
+            (SELECT COUNT(*) FROM nafes_attempts WHERE status = 'submitted' AND submitted_at >= NOW() - INTERVAL 7 DAY) AS week_attempts,
+            (SELECT AVG(percent) FROM nafes_attempts WHERE status = 'submitted' AND mode = 'test') AS avg_percent"
+);
+?>
+<div class="card">
+  <div class="card-head"><h2>منصة نافس</h2>
+    <div class="flex">
+      <a class="btn btn-sm btn-outline" href="<?= h(url('nafes/tests.php')) ?>">الاختبارات</a>
+      <a class="btn btn-sm btn-outline" href="<?= h(url('nafes/reports.php')) ?>">التقارير</a>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="stats mb0">
+      <div class="stat teal"><div class="num"><?= (int) $nafes['students'] ?></div><div class="lbl">طالب نشط</div></div>
+      <div class="stat"><div class="num"><?= (int) $nafes['questions'] ?></div><div class="lbl">سؤال في البنك</div></div>
+      <div class="stat green"><div class="num"><?= (int) $nafes['tests'] ?></div><div class="lbl">اختبار منشور</div></div>
+      <div class="stat amber"><div class="num"><?= (int) $nafes['week_attempts'] ?></div><div class="lbl">محاولة خلال 7 أيام</div></div>
+      <div class="stat"><div class="num"><?= Nafes::pct($nafes['avg_percent'] !== null ? (float) $nafes['avg_percent'] : null) ?></div><div class="lbl">متوسط نتائج الاختبارات</div></div>
+    </div>
+  </div>
+</div>
+<?php endif; ?>
+
 <?php page_end('admin'); ?>

@@ -81,6 +81,15 @@ final class Nafes
         );
     }
 
+    /** «الصف / الفصل» لصف طالب من students() أو student() */
+    public static function classOf(array $student): string
+    {
+        if (empty($student['grade_name'])) {
+            return '—';
+        }
+        return Plans::classLabel(['grade_name' => $student['grade_name'], 'name' => $student['class_name'] ?? '']);
+    }
+
     /** هل للطالب محاولات مسجلة؟ (لا يُحذف حسابه حفاظاً على النتائج) */
     public static function studentHasRecords(int $studentId): bool
     {

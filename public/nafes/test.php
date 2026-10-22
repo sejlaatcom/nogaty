@@ -189,6 +189,7 @@ page_start($id ? 'إدارة الاختبار' : 'اختبار جديد', nafes_
         <button class="btn btn-outline" name="action" value="close" data-confirm="إغلاق الاختبار؟ لن يتمكن الطلاب من بدئه.">إغلاق</button>
         <button class="btn btn-outline" name="action" value="draft" data-confirm="إخفاء الاختبار عن الطلاب؟">إعادة لمسودة</button>
       <?php endif; ?>
+      <a class="btn btn-outline" href="<?= h(url('nafes/test_results.php?id=' . $id)) ?>">النتائج</a>
       <a class="btn btn-outline" target="_blank" href="<?= h(url('nafes/test_print.php?id=' . $id)) ?>">نسخة ورقية</a>
       <button class="btn btn-outline" name="action" value="duplicate">نسخ</button>
       <button class="btn btn-danger" name="action" value="delete" data-confirm="حذف الاختبار؟">حذف</button>

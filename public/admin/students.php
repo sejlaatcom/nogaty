@@ -123,7 +123,7 @@ if (is_post()) {
             $plain = random_password(6);
             Database::update('users', ['password_hash' => password_hash($plain, PASSWORD_DEFAULT)], 'id = :uid', ['uid' => $studentId]);
             $cards[] = ['name' => $student['name'], 'username' => $student['username'], 'password' => $plain,
-                        'class' => Plans::classLabel($student)];
+                        'class' => Nafes::classOf($student)];
         }
         Activity::log('student_passwords', 'users', null, 'count=' . count($cards));
         flash('success', 'تم إنشاء كلمات مرور جديدة لـ ' . count($cards) . ' طالب — اطبع بطاقات الدخول أدناه قبل مغادرة الصفحة.');
@@ -321,12 +321,15 @@ page_start('الطلاب', 'admin', 'students');
             <td><input type="checkbox" name="ids[]" value="<?= (int) $student['id'] ?>"></td>
             <td><strong><?= h($student['name']) ?></strong><?php if ($student['national_id']): ?><br><small><?= h($student['national_id']) ?></small><?php endif; ?></td>
             <td><?= h($student['username']) ?></td>
-            <td><?= $student['class_name'] !== null ? h(Plans::classLabel($student)) : '<span class="badge badge-red">بدون فصل</span>' ?></td>
+            <td><?= $student['class_name'] !== null ? h(Nafes::classOf($student)) : '<span class="badge badge-red">بدون فصل</span>' ?></td>
             <td class="text-muted"><?= h($student['phone'] ?: '—') ?></td>
             <td class="text-muted nowrap"><?= h($student['last_login_at'] ?: 'لم يدخل بعد') ?></td>
             <td><?= (int) $student['is_active'] === 1 ? '<span class="badge badge-green">نشط</span>' : '<span class="badge badge-gray">موقوف</span>' ?></td>
             <td class="actions">
               <a class="btn btn-sm btn-outline" href="<?= h(url('admin/students.php?edit=' . (int) $student['id'] . '&class=' . $classFilter)) ?>">تعديل</a>
+              <?php if ($student['classroom_id']): ?>
+                <a class="btn btn-sm btn-outline" href="<?= h(url('nafes/student_report.php?id=' . (int) $student['id'])) ?>">التقرير</a>
+              <?php endif; ?>
               <button class="btn btn-sm btn-outline" form="row-<?= (int) $student['id'] ?>" name="action" value="reset_password"
                       data-confirm="إنشاء كلمة مرور جديدة لهذا الطالب؟">كلمة مرور</button>
               <button class="btn btn-sm btn-outline" form="row-<?= (int) $student['id'] ?>" name="action" value="toggle">

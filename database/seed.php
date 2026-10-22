@@ -324,3 +324,61 @@ function seed_nafes_demo(): void
         }
     }
 }
+
+/** نتائج تجريبية: اختبار تشخيصي منشور لكل مادة وصف، مع محاولات طلاب بمستويات متفاوتة */
+function seed_nafes_demo_results(): void
+{
+    $adminId = (int) Database::value("SELECT id FROM users WHERE role = 'admin' ORDER BY id LIMIT 1", [], 0);
+    $admin   = Database::first('SELECT * FROM users WHERE id = ?', [$adminId]);
+    if (!$admin) {
+        return;
+    }
+
+    foreach (Nafes::grades() as $grade) {
+        $classIds = array_map('intval', array_column(Database::all('SELECT id FROM classrooms WHERE grade_id = ?', [$grade['id']]), 'id'));
+        if (!$classIds) {
+            continue;
+        }
+        foreach (Nafes::subjects() as $subject) {
+            $available = (int) Database::value(
+                'SELECT COUNT(*) FROM nafes_questions WHERE subject_id = ? AND grade_id = ? AND is_active = 1',
+                [$subject['id'], $grade['id']],
+                0
+            );
+            if ($available < 5) {
+                continue;
+            }
+            [$testId] = Exams::save(null, [
+                'title'      => 'اختبار تشخيصي — ' . $subject['name'],
+                'subject_id' => $subject['id'], 'grade_id' => $grade['id'], 'kind' => 'diagnostic',
+                'instructions' => 'اقرأ كل سؤال بعناية ثم اختر الإجابة الصحيحة.',
+                'duration_min' => 30, 'starts_at' => null, 'ends_at' => null, 'max_attempts' => 1,
+                'shuffle_questions' => 1, 'shuffle_options' => 1, 'show_review' => 1,
+            ], $classIds, $admin);
+            Exams::generate((int) $testId, [], min(12, $available));
+            Exams::setStatus((int) $testId, 'published');
+
+            foreach (Database::all("SELECT * FROM users WHERE role = 'student' AND classroom_id IN (" . implode(',', $classIds) . ')') as $student) {
+                if (random_int(1, 10) === 1) {
+                    continue; // بعض الطلاب لم يختبروا بعد
+                }
+                $ability = random_int(30, 95) / 100;
+                [$attemptId] = Exams::start((int) $testId, $student);
+                if (!$attemptId) {
+                    continue;
+                }
+                $attempt = Exams::attempt($attemptId);
+                foreach (Exams::attemptQuestions($attemptId) as $q) {
+                    $correct = array_values(array_filter($q['options'], static fn ($o) => (int) $o['is_correct'] === 1));
+                    $wrong   = array_values(array_filter($q['options'], static fn ($o) => (int) $o['is_correct'] !== 1));
+                    $hard    = 0.12 * ((int) $q['difficulty'] - 2);
+                    $pick    = (mt_rand() / mt_getrandmax()) < ($ability - $hard) ? ($correct[0] ?? null) : ($wrong[array_rand($wrong)] ?? null);
+                    if ($pick) {
+                        Exams::saveAnswer($attempt, (int) $q['question_id'], (int) $pick['id']);
+                    }
+                }
+                Exams::submit($attemptId);
+            }
+        }
+    }
+}

@@ -375,3 +375,28 @@ fieldset.plain{border:none;margin:0;padding:0;min-width:0}
 .practice-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 0;border-bottom:1px dashed var(--line)}
 .practice-skill{flex:1}
 .practice-skill .progress{max-width:320px;margin:6px 0 2px}
+
+/* ---------- التقارير ---------- */
+.levels-bar{display:flex;height:26px;border-radius:8px;overflow:hidden;background:#eef2f5}
+.levels-bar span{display:flex;align-items:center;justify-content:center;color:#fff;font-size:.78rem;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.levels-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:.85rem}
+.levels-legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-left:5px;vertical-align:middle}
+.lv-advanced{background:#7c3aed}.lv-proficient{background:var(--green)}.lv-basic{background:#d97706}.lv-below{background:var(--red)}
+.opt-dist{display:flex;justify-content:space-between;gap:8px;font-size:.8rem;padding:1px 6px;border-radius:5px}
+.opt-dist.correct{background:var(--green-bg);color:var(--green)}
+table.heatmap{border-collapse:collapse;font-size:.82rem;width:100%}
+table.heatmap th,table.heatmap td{border:1px solid var(--line);padding:6px;text-align:center}
+table.heatmap th.skill-h{writing-mode:vertical-rl;transform:rotate(180deg);max-height:180px;font-weight:500;font-size:.78rem;white-space:nowrap;vertical-align:bottom}
+table.heatmap td.name{text-align:right;white-space:nowrap;font-weight:500}
+table.heatmap td.c-advanced{background:#ede9fe;color:#5b21b6}
+table.heatmap td.c-proficient{background:var(--green-bg);color:var(--green)}
+table.heatmap td.c-basic{background:var(--amber-bg);color:var(--amber)}
+table.heatmap td.c-below{background:var(--red-bg);color:var(--red)}
+table.heatmap td,table.heatmap th{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.group-card{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff}
+.group-card h4{margin:0 0 6px;font-size:.95rem}
+.report-sheet{max-width:900px;margin:0 auto}
+@media print{
+  .area-admin .content, .area-teacher .content{font-size:11px}
+  .report-sheet .card{break-inside:avoid;box-shadow:none}
+}

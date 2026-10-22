@@ -64,6 +64,7 @@ page_start('اختبارات نافس', nafes_area(), 'nafes_tests');
               <?php if (Exams::canManage($user, $test)): ?>
                 <a class="btn btn-sm btn-outline" href="<?= h(url('nafes/test.php?id=' . (int) $test['id'])) ?>">إدارة</a>
               <?php endif; ?>
+              <a class="btn btn-sm btn-outline" href="<?= h(url('nafes/test_results.php?id=' . (int) $test['id'])) ?>">النتائج</a>
             </td>
           </tr>
         <?php endforeach; ?>

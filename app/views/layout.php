@@ -53,6 +53,7 @@ function nafes_nav_items(string $area): array
         'nafes_skills'   => ['المجالات والمهارات', 'nafes/skills.php', '◈'],
         'nafes_passages' => ['نصوص القراءة', 'nafes/passages.php', '¶'],
         'nafes_tests'    => ['الاختبارات', 'nafes/tests.php', '✎'],
+        'nafes_reports'  => ['التقارير والتحليل', 'nafes/reports.php', '▥'],
     ];
     if ($area === 'admin') {
         $items['students']       = ['الطلاب', 'admin/students.php', '☻'];

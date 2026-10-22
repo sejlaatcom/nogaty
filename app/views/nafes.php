@@ -145,7 +145,7 @@ function render_attempt_result(array $attempt, bool $showReview): void
                 $class = (int) $option['is_correct'] === 1 ? 'correct' : ((int) $q['option_id'] === (int) $option['id'] ? 'wrong' : '');
                 ?>
                 <li class="<?= $class ?>"><span class="opt-letter"><?= option_letter($j) ?></span><?= h($option['body']) ?>
-                  <?= (int) $q['option_id'] === (int) $option['id'] ? ' <small>(إجابتك)</small>' : '' ?></li>
+                  <?= (int) $q['option_id'] === (int) $option['id'] ? ' <small>(' . (Auth::isStudent() ? 'إجابتك' : 'إجابة الطالب') . ')</small>' : '' ?></li>
               <?php endforeach; ?>
             </ol>
             <?php if ($q['explanation']): ?><div class="q-explain"><b>التفسير:</b> <?= nl2br_e($q['explanation']) ?></div><?php endif; ?>
@@ -154,4 +154,26 @@ function render_attempt_result(array $attempt, bool $showReview): void
       </div>
     </div>
     <?php
+}
+
+/** شريط مكدّس لتوزيع المستويات مع مفتاح الألوان */
+function levels_bar(array $levels): string
+{
+    $total = array_sum($levels);
+    if ($total === 0) {
+        return '<span class="text-muted">—</span>';
+    }
+    $html = '<div class="levels-bar">';
+    foreach (Nafes::LEVELS as $key => $label) {
+        if (!empty($levels[$key])) {
+            $width = $levels[$key] / $total * 100;
+            $html .= '<span class="lv-' . $key . '" style="width:' . $width . '%" title="' . h($label) . ': ' . $levels[$key] . '">'
+                   . ($width >= 8 ? round($width) . '٪' : '') . '</span>';
+        }
+    }
+    $html .= '</div><div class="levels-legend">';
+    foreach (Nafes::LEVELS as $key => $label) {
+        $html .= '<span><i class="lv-' . $key . '"></i>' . h($label) . ': <b>' . (int) ($levels[$key] ?? 0) . '</b></span>';
+    }
+    return $html . '</div>';
 }
