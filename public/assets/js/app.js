@@ -60,4 +60,57 @@ document.addEventListener('DOMContentLoaded', function () {
         .catch(function () {});
     }, 60000);
   }
+  /* ---------------- منصة نافس: محرر الأسئلة ---------------- */
+  var qSubject = document.getElementById('q-subject');
+  var qGrade   = document.getElementById('q-grade');
+  var filterBySubject = function () {
+    var subject = qSubject ? qSubject.value : '0';
+    var grade   = qGrade ? qGrade.value : '0';
+    var matches = function (el) {
+      var s = el.getAttribute('data-subject'), g = el.getAttribute('data-grade');
+      return (subject === '0' || s === subject) && (grade === '0' || g === '0' || g === grade);
+    };
+    document.querySelectorAll('#q-skill optgroup, #q-passage option[data-subject]').forEach(function (el) {
+      var ok = matches(el);
+      el.hidden = !ok;
+      el.disabled = !ok;
+    });
+    ['q-skill', 'q-passage'].forEach(function (id) {
+      var select = document.getElementById(id);
+      if (select && select.selectedOptions.length && select.selectedOptions[0].disabled) { select.value = '0'; }
+    });
+  };
+  if (qSubject) {
+    qSubject.addEventListener('change', filterBySubject);
+    if (qGrade) { qGrade.addEventListener('change', filterBySubject); }
+    filterBySubject();
+  }
+
+  var typeRadios = document.querySelectorAll('[data-qtype]');
+  var applyType = function () {
+    var checked = document.querySelector('[data-qtype]:checked');
+    var type = checked ? checked.value : 'mcq';
+    document.querySelectorAll('[data-type-block]').forEach(function (block) {
+      block.classList.toggle('hidden', block.getAttribute('data-type-block') !== type);
+    });
+  };
+  typeRadios.forEach(function (r) { r.addEventListener('change', applyType); });
+  if (typeRadios.length) { applyType(); }
+
+  var addOption = document.getElementById('add-option');
+  if (addOption) {
+    var letters = ['أ', 'ب', 'ج', 'د', 'هـ', 'و'];
+    addOption.addEventListener('click', function () {
+      var list = document.getElementById('options-list');
+      var count = list.querySelectorAll('.option-row').length;
+      if (count >= letters.length) { return; }
+      var row = list.querySelector('.option-row').cloneNode(true);
+      row.querySelector('input[type=radio]').value = count;
+      row.querySelector('input[type=radio]').checked = false;
+      row.querySelector('input[type=text]').name = 'options[' + count + ']';
+      row.querySelector('input[type=text]').value = '';
+      row.querySelector('.opt-letter').textContent = letters[count];
+      list.appendChild(row);
+    });
+  }
 });

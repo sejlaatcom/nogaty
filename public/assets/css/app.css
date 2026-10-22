@@ -276,3 +276,27 @@ table.sheet-table tr.missing td{color:#94a3b8;font-style:italic}
   .login-cards{grid-template-columns:repeat(3,1fr);gap:6px}
   .login-card{font-size:9px;padding:6px}
 }
+
+/* ---------- بنك الأسئلة ---------- */
+fieldset.plain{border:none;margin:0;padding:0;min-width:0}
+.q-editor-grid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:18px;align-items:start}
+.option-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.option-row input[type=text]{flex:1}
+.opt-correct input{width:18px;height:18px;accent-color:var(--green)}
+.opt-letter{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;
+  background:var(--teal-light);color:var(--teal-dark);font-weight:700;font-size:.85rem;flex-shrink:0}
+.q-stem{font-size:1.05rem;font-weight:500;margin-bottom:12px;line-height:1.9}
+.q-image{max-width:100%;max-height:320px;border:1px solid var(--line);border-radius:10px;margin-bottom:12px;display:block}
+.q-image.small{max-height:90px;margin:0}
+.q-options{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.q-options li{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff}
+.q-options li.correct{border-color:#86efac;background:var(--green-bg)}
+.q-options li.wrong{border-color:#fca5a5;background:var(--red-bg)}
+.q-explain{margin-top:12px;background:#fdf8ec;border:1px solid #f1dfb1;border-radius:10px;padding:10px 12px;font-size:.9rem}
+.passage{border:1px solid var(--line);border-radius:12px;background:#fbfcfd;margin-bottom:14px}
+.passage summary{cursor:pointer;padding:10px 14px;font-weight:700;color:var(--teal-dark)}
+.passage-body{padding:0 16px 14px;line-height:2;font-size:1rem;max-height:380px;overflow-y:auto}
+.pagination{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:10px 0 20px}
+.pagination a,.pagination span{min-width:34px;text-align:center;padding:5px 10px;border-radius:8px;border:1px solid var(--line);background:#fff}
+.pagination span.current{background:var(--teal);border-color:var(--teal);color:#fff}
+@media (max-width:900px){ .q-editor-grid{grid-template-columns:1fr} }

@@ -205,11 +205,97 @@ function seed_nafes(): void
         'nafes_subject_ids' => implode(',', $subjectIds),
         'nafes_grade_ids'   => implode(',', $gradeIds),
     ]);
+
+    seed_nafes_bank(false);
 }
 
-/** بيانات نافس التجريبية: طلاب لفصول صفوف نافس */
+/**
+ * إطار مهارات نافس (المجالات والمهارات) من database/nafes_data.php،
+ * ومع $withQuestions تُضاف الأسئلة والنصوص التجريبية أيضاً.
+ */
+function seed_nafes_bank(bool $withQuestions): void
+{
+    $data    = require __DIR__ . '/nafes_data.php';
+    $adminId = (int) Database::value("SELECT id FROM users WHERE role = 'admin' ORDER BY id LIMIT 1", [], 0) ?: null;
+
+    foreach ($data as $block) {
+        $subjectId = (int) Database::value('SELECT id FROM subjects WHERE name = ?', [$block['subject']], 0);
+        $gradeId   = (int) Database::value('SELECT id FROM grades WHERE name = ?', [$block['grade']], 0);
+        if (!$subjectId || !$gradeId) {
+            continue;
+        }
+
+        $skillIds = [];
+        $order    = 0;
+        foreach ($block['domains'] as $domainName => $skills) {
+            $domainId = (int) Database::value(
+                'SELECT id FROM nafes_domains WHERE subject_id = ? AND grade_id = ? AND name = ?',
+                [$subjectId, $gradeId, $domainName],
+                0
+            ) ?: Database::insert('nafes_domains', [
+                'subject_id' => $subjectId, 'grade_id' => $gradeId, 'name' => $domainName, 'sort_order' => ++$order,
+            ]);
+
+            $skillOrder = 0;
+            foreach ($skills as $code => [$skillName, $questions]) {
+                $skillId = (int) Database::value('SELECT id FROM nafes_skills WHERE domain_id = ? AND code = ?', [$domainId, $code], 0)
+                    ?: Database::insert('nafes_skills', ['domain_id' => $domainId, 'code' => $code, 'name' => $skillName, 'sort_order' => ++$skillOrder]);
+                $skillIds[$code] = $skillId;
+
+                if ($withQuestions) {
+                    foreach ($questions as $question) {
+                        seed_nafes_question($subjectId, $gradeId, $skillId, null, $question, $adminId);
+                    }
+                }
+            }
+        }
+
+        if (!$withQuestions) {
+            continue;
+        }
+        foreach ($block['passages'] ?? [] as $passage) {
+            if (Database::value('SELECT id FROM nafes_passages WHERE subject_id = ? AND grade_id = ? AND title = ?', [$subjectId, $gradeId, $passage['title']])) {
+                continue;
+            }
+            $passageId = Database::insert('nafes_passages', [
+                'subject_id' => $subjectId, 'grade_id' => $gradeId,
+                'title' => $passage['title'], 'body' => $passage['body'], 'created_by' => $adminId,
+            ]);
+            foreach ($passage['questions'] as $question) {
+                $code = array_shift($question);
+                seed_nafes_question($subjectId, $gradeId, $skillIds[$code] ?? null, $passageId, $question, $adminId);
+            }
+        }
+    }
+}
+
+function seed_nafes_question(int $subjectId, int $gradeId, ?int $skillId, ?int $passageId, array $question, ?int $userId): void
+{
+    if (Database::value('SELECT id FROM nafes_questions WHERE subject_id = ? AND grade_id = ? AND stem = ?', [$subjectId, $gradeId, $question[0]])) {
+        return; // السؤال مضاف مسبقاً
+    }
+    if (is_bool($question[1])) {
+        [$stem, $isTrue, $difficulty] = $question;
+        $type    = 'tf';
+        $options = [['body' => 'صح', 'is_correct' => $isTrue]];
+        $explain = $question[3] ?? '';
+    } else {
+        [$stem, $choices, $correct, $difficulty] = $question;
+        $type    = 'mcq';
+        $options = array_map(static fn ($body, $i) => ['body' => $body, 'is_correct' => $i === $correct], $choices, array_keys($choices));
+        $explain = $question[4] ?? '';
+    }
+    QuestionBank::save(null, [
+        'subject_id' => $subjectId, 'grade_id' => $gradeId, 'skill_id' => $skillId, 'passage_id' => $passageId,
+        'type' => $type, 'stem' => $stem, 'difficulty' => $difficulty, 'explanation' => $explain, 'is_active' => 1,
+    ], $options, (int) $userId);
+}
+
+/** بيانات نافس التجريبية: أسئلة ونصوص، وطلاب لفصول صفوف نافس */
 function seed_nafes_demo(): void
 {
+    seed_nafes_bank(true);
+
     $first = ['عبدالله', 'محمد', 'فيصل', 'سلمان', 'خالد', 'يزن', 'ريان', 'مشعل', 'عبدالرحمن', 'نواف', 'راكان', 'مازن'];
     $last  = ['العتيبي', 'القحطاني', 'الحربي', 'الغامدي', 'الشهري', 'الدوسري', 'المطيري', 'الزهراني', 'السبيعي', 'العنزي'];
 

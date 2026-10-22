@@ -44,12 +44,23 @@ function nafes_nav_items(string $area): array
     if (!Settings::bool('nafes_enabled') && $area !== 'admin') {
         return [];
     }
-    $items = ['_nafes' => ['منصة نافس', null, '']];
+    $items = [
+        '_nafes'         => ['منصة نافس', null, ''],
+        'nafes_bank'     => ['بنك الأسئلة', 'nafes/questions.php', '؟'],
+        'nafes_skills'   => ['المجالات والمهارات', 'nafes/skills.php', '◈'],
+        'nafes_passages' => ['نصوص القراءة', 'nafes/passages.php', '¶'],
+    ];
     if ($area === 'admin') {
         $items['students']       = ['الطلاب', 'admin/students.php', '☻'];
         $items['nafes_settings'] = ['إعدادات نافس', 'admin/nafes_settings.php', '⚙'];
     }
     return $items;
+}
+
+/** منطقة صفحات نافس المشتركة بين الإدارة والمعلم */
+function nafes_area(): string
+{
+    return Auth::isAdmin() ? 'admin' : 'teacher';
 }
 
 /** وصف دور المستخدم في الشريط العلوي */

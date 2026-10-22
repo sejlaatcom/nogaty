@@ -20,6 +20,16 @@ if (is_post()) {
         redirect('admin/nafes_settings.php');
     }
 
+    if (input('action') === 'seed_framework') {
+        require APP_ROOT . '/database/seed.php';
+        $before = (int) Database::value('SELECT COUNT(*) FROM nafes_questions', [], 0);
+        seed_nafes_bank(isset($_POST['with_questions']));
+        $added = (int) Database::value('SELECT COUNT(*) FROM nafes_questions', [], 0) - $before;
+        Activity::log('nafes_seed', null, null, 'questions=' . $added);
+        flash('success', 'تم استيراد إطار المجالات والمهارات' . ($added ? ' و' . $added . ' سؤالاً تجريبياً.' : '.'));
+        redirect('admin/nafes_settings.php');
+    }
+
     $advanced   = max(0, min(100, input_int('nafes_level_advanced', 85)));
     $proficient = max(0, min(100, input_int('nafes_level_proficient', 65)));
     $basic      = max(0, min(100, input_int('nafes_level_basic', 50)));
@@ -121,5 +131,20 @@ page_start('إعدادات منصة نافس', 'admin', 'nafes_settings');
 
   <div class="toolbar"><button class="btn btn-primary" type="submit">حفظ الإعدادات</button></div>
 </form>
+
+<?php if (!$needsMigration): ?>
+<div class="card">
+  <div class="card-head"><h2>الإطار الافتراضي للمهارات</h2></div>
+  <div class="card-body">
+    <p class="help">يضيف مجالات ومهارات نافس للرياضيات والعلوم والقراءة (لغتي) للصفين الثالث والسادس الابتدائي
+      (المجالات الموجودة بالاسم نفسه لا تُكرَّر). يمكنك تعديلها بعد ذلك من صفحة «المجالات والمهارات».</p>
+    <form method="post" class="flex">
+      <?= csrf_field() ?>
+      <label class="flex"><input type="checkbox" name="with_questions" style="width:auto"> مع أسئلة ونصوص قراءة تجريبية (<?= (int) Database::value('SELECT COUNT(*) FROM nafes_questions', [], 0) ?> سؤالاً في البنك حالياً)</label>
+      <button class="btn btn-outline" name="action" value="seed_framework" data-confirm="استيراد الإطار الافتراضي؟">استيراد الإطار</button>
+    </form>
+  </div>
+</div>
+<?php endif; ?>
 
 <?php page_end('admin'); ?>

@@ -73,6 +73,7 @@ require APP_PATH . '/lib/Csv.php';
 require APP_PATH . '/lib/Importer.php';
 require APP_PATH . '/lib/Migrator.php';
 require APP_PATH . '/lib/Nafes.php';
+require APP_PATH . '/lib/QuestionBank.php';
 
 Database::configure($config['db'] ?? []);
 $GLOBALS['config'] = $config;
