@@ -102,3 +102,37 @@ $router->group(['middleware' => ['auth', 'password']], static function ($r) {
     $r->post('/import/{kind}/run', [ImportController::class, 'run']);
     $r->get('/import/{kind}/report/{id}', [ImportController::class, 'report']);
 });
+
+/* ======================= المرحلة 3: بنك الأسئلة والتصنيفات ======================= */
+use App\Controllers\PassageController;
+use App\Controllers\QuestionController;
+use App\Controllers\TaxonomyController;
+
+$router->group(['middleware' => ['auth', 'password']], static function ($r) {
+    $r->get('/taxonomy', [TaxonomyController::class, 'index'], ['can:questions.view']);
+    $r->get('/taxonomy/tree', [TaxonomyController::class, 'tree'], ['can:questions.view|tests.view']);
+    $r->post('/taxonomy', [TaxonomyController::class, 'save'], ['can:taxonomy.manage']);
+
+    $r->get('/passages', [PassageController::class, 'index'], ['can:questions.view']);
+    $r->get('/passages/create', [PassageController::class, 'form'], ['can:questions.create']);
+    $r->post('/passages', [PassageController::class, 'save'], ['can:questions.create']);
+    $r->get('/passages/{id}/edit', [PassageController::class, 'form'], ['can:questions.view']);
+    $r->post('/passages/{id}', [PassageController::class, 'save'], ['can:questions.create']);
+    $r->post('/passages/{id}/delete', [PassageController::class, 'destroy'], ['can:questions.edit_any']);
+
+    $r->group(['middleware' => ['can:questions.view']], static function ($r) {
+        $r->get('/questions', [QuestionController::class, 'index']);
+        $r->get('/questions/export', [QuestionController::class, 'export']);
+        $r->get('/questions/create', [QuestionController::class, 'create'], ['can:questions.create']);
+        $r->post('/questions', [QuestionController::class, 'store'], ['can:questions.create']);
+        $r->post('/questions/preview', [QuestionController::class, 'previewRender'], ['can:questions.create']);
+        $r->post('/questions/status', [QuestionController::class, 'status']);
+        $r->get('/questions/{id}', [QuestionController::class, 'show']);
+        $r->get('/questions/{id}/edit', [QuestionController::class, 'edit'], ['can:questions.create']);
+        $r->post('/questions/{id}', [QuestionController::class, 'update'], ['can:questions.create']);
+        $r->post('/questions/{id}/duplicate', [QuestionController::class, 'duplicate'], ['can:questions.create']);
+        $r->post('/questions/{id}/status', [QuestionController::class, 'status']);
+        $r->post('/questions/{id}/delete', [QuestionController::class, 'destroy'], ['can:questions.create']);
+        $r->post('/questions/{id}/revisions/{rid}/restore', [QuestionController::class, 'restore'], ['can:questions.create']);
+    });
+});

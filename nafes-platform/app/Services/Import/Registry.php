@@ -11,6 +11,8 @@ final class Registry
     public const KINDS = [
         'students'  => StudentImporter::class,
         'teachers'  => TeacherImporter::class,
+        'questions' => QuestionImporter::class,
+        'taxonomy'  => TaxonomyImporter::class,
     ];
 
     public static function make(string $kind): Importer

@@ -7,6 +7,18 @@ namespace App\Core;
 final class View
 {
     private static array $shared = [];
+    private static array $stacks = [];
+
+    /** إضافة محتوى لمكدس يطبعه القالب الرئيسي (مثل سكربتات الصفحة) */
+    public static function push(string $stack, string $html): void
+    {
+        self::$stacks[$stack][] = $html;
+    }
+
+    public static function stack(string $stack): string
+    {
+        return implode("\n", self::$stacks[$stack] ?? []);
+    }
 
     public static function share(string $key, mixed $value): void
     {

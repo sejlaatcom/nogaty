@@ -104,6 +104,6 @@ $roles   = \App\Core\DB::column('SELECT r.name FROM user_roles ur JOIN roles r O
 </div>
 <script src="<?= asset('vendor/bootstrap/bootstrap.bundle.min.js') ?>"></script>
 <script src="<?= asset('js/app.js') ?>"></script>
-<?= $scripts ?? '' ?>
+<?= \App\Core\View::stack('scripts') ?>
 </body>
 </html>
