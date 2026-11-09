@@ -1,17 +1,17 @@
 <?php
 declare(strict_types=1);
 
-/** استيراد البيانات من ملفات CSV (المعلمون، الإسناد، الخطط) */
+/** استيراد البيانات من ملفات CSV (المعلمون، الإسناد، الخطط، الطلاب) */
 final class Importer
 {
     /** مرادفات رؤوس الأعمدة المقبولة */
     private const ALIASES = [
-        'name'       => ['الاسم', 'اسم المعلم', 'الاسم الكامل', 'name', 'teacher'],
+        'name'       => ['الاسم', 'اسم المعلم', 'اسم الطالب', 'الاسم الكامل', 'name', 'teacher', 'student'],
         'username'   => ['اسم المستخدم', 'المستخدم', 'username', 'user'],
         'password'   => ['كلمة المرور', 'password'],
-        'phone'      => ['الجوال', 'الهاتف', 'phone', 'mobile'],
+        'phone'      => ['الجوال', 'الهاتف', 'جوال ولي الأمر', 'phone', 'mobile'],
         'email'      => ['البريد', 'البريد الإلكتروني', 'email'],
-        'national_id'=> ['الهوية', 'رقم الهوية', 'national_id', 'id_number'],
+        'national_id'=> ['الهوية', 'رقم الهوية', 'السجل المدني', 'رقم الطالب', 'national_id', 'id_number'],
         'job_title'  => ['المسمى الوظيفي', 'الوظيفة', 'job_title'],
         'role'       => ['الصلاحية', 'الدور', 'role'],
         'subject'    => ['المادة', 'اسم المادة', 'subject'],
@@ -94,7 +94,11 @@ final class Importer
                 'role'        => (($item['role'] ?? '') === 'admin' || ($item['role'] ?? '') === 'إدارة') ? 'admin' : 'teacher',
             ];
 
-            $existing = Database::first('SELECT id FROM users WHERE username = ?', [$username]);
+            $existing = Database::first('SELECT id, role FROM users WHERE username = ?', [$username]);
+            if ($existing && $existing['role'] === 'student') {
+                $result['errors'][] = 'السطر ' . ($line + 2) . ': اسم المستخدم ' . $username . ' مستخدم لحساب طالب.';
+                continue;
+            }
             if ($existing) {
                 Database::update('users', $data, 'id = :uid', ['uid' => $existing['id']]);
                 $result['updated']++;
@@ -115,9 +119,9 @@ final class Importer
         return $result;
     }
 
-    private static function suggestUsername(string $name): string
+    private static function suggestUsername(string $name, string $prefix = 't'): string
     {
-        $base = 't' . substr(md5($name), 0, 7);
+        $base = $prefix . substr(md5($name), 0, 7);
         $i = 0;
         do {
             $candidate = $base . ($i > 0 ? (string) $i : '');
@@ -299,6 +303,77 @@ final class Importer
         $result['plans'] = count($touched);
 
         Activity::log('import_plans', 'plans', null, 'plans=' . $result['plans'] . ' rows=' . $result['rows']);
+        return $result;
+    }
+    /* ------------------------- الطلاب ------------------------- */
+    public static function students(array $rows, bool $createMissing = true, ?int $defaultClassroomId = null): array
+    {
+        $result = ['created' => 0, 'updated' => 0, 'errors' => [], 'passwords' => []];
+        $items  = self::normalize($rows);
+
+        foreach ($items as $line => $item) {
+            $row  = $line + 2;
+            $name = $item['name'] ?? '';
+            if ($name === '') {
+                $result['errors'][] = "السطر $row: اسم الطالب مفقود.";
+                continue;
+            }
+
+            $nationalId = preg_replace('/\D+/', '', $item['national_id'] ?? '') ?? '';
+            $username   = strtolower($item['username'] ?? '');
+            if ($username === '') {
+                $username = $nationalId !== '' ? $nationalId : self::suggestUsername($name, 's');
+            }
+            if (!preg_match('/^[a-z0-9_.-]{3,64}$/', $username)) {
+                $result['errors'][] = "السطر $row: اسم المستخدم غير صالح ($username).";
+                continue;
+            }
+
+            $classroomId = $defaultClassroomId ?: 0;
+            $gradeName   = $item['grade'] ?? '';
+            $className   = $item['classroom'] ?? '';
+            if ($gradeName !== '' && $className !== '') {
+                $gradeId = self::lookupId('grades', 'name', $gradeName, $createMissing, ['stage' => 'ابتدائي', 'sort_order' => 99]);
+                $classroomId = $gradeId ? (int) Database::value('SELECT id FROM classrooms WHERE grade_id = ? AND name = ?', [$gradeId, $className], 0) : 0;
+                if ($gradeId && !$classroomId && $createMissing) {
+                    $classroomId = Database::insert('classrooms', ['grade_id' => $gradeId, 'name' => $className, 'sort_order' => 1, 'is_active' => 1]);
+                }
+            }
+            if (!$classroomId) {
+                $result['errors'][] = "السطر $row: الصف أو الفصل غير موجود ($gradeName / $className).";
+                continue;
+            }
+
+            $data = [
+                'name'         => $name,
+                'national_id'  => $nationalId ?: null,
+                'phone'        => ($item['phone'] ?? '') ?: null,
+                'classroom_id' => $classroomId,
+            ];
+
+            $existing = Database::first('SELECT id, role FROM users WHERE username = ?', [$username]);
+            if ($existing && $existing['role'] !== 'student') {
+                $result['errors'][] = "السطر $row: اسم المستخدم $username مستخدم لحساب معلم أو إدارة.";
+                continue;
+            }
+            if ($existing) {
+                Database::update('users', $data, 'id = :uid', ['uid' => $existing['id']]);
+                $result['updated']++;
+            } else {
+                $plain = ($item['password'] ?? '') ?: random_password(6);
+                Database::insert('users', $data + [
+                    'username'      => $username,
+                    'password_hash' => password_hash($plain, PASSWORD_DEFAULT),
+                    'role'          => 'student',
+                    'job_title'     => 'طالب',
+                    'is_active'     => 1,
+                ]);
+                $result['created']++;
+                $result['passwords'][] = ['name' => $name, 'username' => $username, 'password' => $plain];
+            }
+        }
+
+        Activity::log('import_students', 'users', null, 'created=' . $result['created'] . ' updated=' . $result['updated']);
         return $result;
     }
 }

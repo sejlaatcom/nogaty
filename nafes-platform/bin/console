@@ -1,0 +1,78 @@
+#!/usr/bin/env php
+<?php
+/**
+ * أوامر سطر الأوامر:
+ *   php bin/console migrate                 تطبيق البنية والترحيلات
+ *   php bin/console seed [--demo]           البيانات الأساسية (والتجريبية)
+ *   php bin/console create-admin USER "الاسم"   إنشاء مدير (تُطلب كلمة المرور تفاعلياً)
+ *   php bin/console backup                  نسخة احتياطية إلى storage/backups
+ *   php bin/console sweep                   تسليم المحاولات المنتهية وإرسال تنبيهات المواعيد
+ */
+declare(strict_types=1);
+
+if (PHP_SAPI !== 'cli') {
+    exit(1);
+}
+require __DIR__ . '/../app/bootstrap.php';
+
+use App\Core\DB;
+
+$command = $argv[1] ?? 'help';
+$seeders = static function (): void {
+    foreach (glob(BASE_PATH . '/database/seeders/*.php') as $file) {
+        require_once $file;
+    }
+};
+
+switch ($command) {
+    case 'migrate':
+        foreach (App\Services\Migrator::run(DB::pdo()) as $line) {
+            echo "✓ $line\n";
+        }
+        break;
+
+    case 'seed':
+        $seeders();
+        RolesSeeder::run();
+        BaseSeeder::run();
+        echo "✓ roles, base data\n";
+        if (in_array('--demo', $argv, true)) {
+            DemoSeeder::run();
+            echo "✓ demo data\n";
+        }
+        break;
+
+    case 'create-admin':
+        $username = $argv[2] ?? '';
+        $name     = $argv[3] ?? 'مدير النظام';
+        if ($username === '') {
+            exit("الاستخدام: php bin/console create-admin USERNAME \"الاسم\"\n");
+        }
+        echo 'كلمة المرور (8 أحرف على الأقل): ';
+        system('stty -echo 2>/dev/null');
+        $password = trim((string) fgets(STDIN));
+        system('stty echo 2>/dev/null');
+        echo "\n";
+        if (mb_strlen($password) < 8) {
+            exit("كلمة المرور قصيرة.\n");
+        }
+        $seeders();
+        RolesSeeder::run();
+        $id = App\Models\User::create(['username' => $username, 'full_name' => $name, 'password' => $password, 'must_change_password' => 0], ['admin']);
+        echo "✓ أُنشئ المدير #$id\n";
+        break;
+
+    case 'backup':
+        $file = App\Services\Backup::create(null);
+        echo "✓ $file\n";
+        break;
+
+    case 'sweep':
+        echo '✓ ' . App\Services\TestEngine::sweepExpired(500) . " محاولة سُلّمت تلقائياً\n";
+        App\Services\Notifier::deadlineReminders();
+        echo "✓ تنبيهات المواعيد\n";
+        break;
+
+    default:
+        echo "الأوامر: migrate | seed [--demo] | create-admin USER \"الاسم\" | backup | sweep\n";
+}

@@ -21,7 +21,7 @@ if ($export !== '') {
         case 'teachers':
             $title = 'المعلمون';
             $rows[] = ['الاسم', 'اسم المستخدم', 'الصلاحية', 'الجوال', 'البريد الإلكتروني', 'رقم الهوية', 'المسمى الوظيفي', 'الحالة'];
-            foreach (Database::all('SELECT * FROM users ORDER BY role DESC, name') as $user) {
+            foreach (Database::all("SELECT * FROM users WHERE role <> 'student' ORDER BY role DESC, name") as $user) {
                 $rows[] = [
                     $user['name'], $user['username'], $user['role'] === 'admin' ? 'إدارة' : 'معلم',
                     $user['phone'], $user['email'], $user['national_id'], $user['job_title'],

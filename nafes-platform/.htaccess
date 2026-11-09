@@ -1,0 +1,9 @@
+# في حال تعذّر جعل مجلد public جذراً للموقع: يُعاد توجيه كل الطلبات إليه
+# ويُمنع الوصول المباشر لمجلدات التطبيق والإعدادات والتخزين.
+Options -Indexes
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(app|config|database|routes|storage|tests|vendor|bin)(/|$) - [F,L]
+    RewriteRule ^(\.env|composer\.(json|lock)|README\.md)$ - [F,L]
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>

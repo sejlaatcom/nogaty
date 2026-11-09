@@ -183,3 +183,202 @@ function seed_demo(): void
         $index++;
     }
 }
+
+/** إعدادات منصة نافس الافتراضية: المواد والصفوف المستهدفة */
+function seed_nafes(): void
+{
+    $subjectIds = [];
+    foreach (['لغتي', 'الرياضيات', 'العلوم'] as $name) {
+        $id = (int) Database::value('SELECT id FROM subjects WHERE name = ?', [$name], 0);
+        if ($id) {
+            $subjectIds[] = $id;
+        }
+    }
+    $gradeIds = [];
+    foreach (['الثالث الابتدائي', 'السادس الابتدائي', 'الثالث المتوسط'] as $name) {
+        $id = (int) Database::value('SELECT id FROM grades WHERE name = ?', [$name], 0);
+        if ($id) {
+            $gradeIds[] = $id;
+        }
+    }
+    Settings::setMany([
+        'nafes_subject_ids' => implode(',', $subjectIds),
+        'nafes_grade_ids'   => implode(',', $gradeIds),
+    ]);
+
+    seed_nafes_bank(false);
+}
+
+/**
+ * إطار مهارات نافس (المجالات والمهارات) من database/nafes_data.php،
+ * ومع $withQuestions تُضاف الأسئلة والنصوص التجريبية أيضاً.
+ */
+function seed_nafes_bank(bool $withQuestions): void
+{
+    $data    = require __DIR__ . '/nafes_data.php';
+    $adminId = (int) Database::value("SELECT id FROM users WHERE role = 'admin' ORDER BY id LIMIT 1", [], 0) ?: null;
+
+    foreach ($data as $block) {
+        $subjectId = (int) Database::value('SELECT id FROM subjects WHERE name = ?', [$block['subject']], 0);
+        $gradeId   = (int) Database::value('SELECT id FROM grades WHERE name = ?', [$block['grade']], 0);
+        if (!$subjectId || !$gradeId) {
+            continue;
+        }
+
+        $skillIds = [];
+        $order    = 0;
+        foreach ($block['domains'] as $domainName => $skills) {
+            $domainId = (int) Database::value(
+                'SELECT id FROM nafes_domains WHERE subject_id = ? AND grade_id = ? AND name = ?',
+                [$subjectId, $gradeId, $domainName],
+                0
+            ) ?: Database::insert('nafes_domains', [
+                'subject_id' => $subjectId, 'grade_id' => $gradeId, 'name' => $domainName, 'sort_order' => ++$order,
+            ]);
+
+            $skillOrder = 0;
+            foreach ($skills as $code => [$skillName, $questions]) {
+                $skillId = (int) Database::value('SELECT id FROM nafes_skills WHERE domain_id = ? AND code = ?', [$domainId, $code], 0)
+                    ?: Database::insert('nafes_skills', ['domain_id' => $domainId, 'code' => $code, 'name' => $skillName, 'sort_order' => ++$skillOrder]);
+                $skillIds[$code] = $skillId;
+
+                if ($withQuestions) {
+                    foreach ($questions as $question) {
+                        seed_nafes_question($subjectId, $gradeId, $skillId, null, $question, $adminId);
+                    }
+                }
+            }
+        }
+
+        if (!$withQuestions) {
+            continue;
+        }
+        foreach ($block['passages'] ?? [] as $passage) {
+            if (Database::value('SELECT id FROM nafes_passages WHERE subject_id = ? AND grade_id = ? AND title = ?', [$subjectId, $gradeId, $passage['title']])) {
+                continue;
+            }
+            $passageId = Database::insert('nafes_passages', [
+                'subject_id' => $subjectId, 'grade_id' => $gradeId,
+                'title' => $passage['title'], 'body' => $passage['body'], 'created_by' => $adminId,
+            ]);
+            foreach ($passage['questions'] as $question) {
+                $code = array_shift($question);
+                seed_nafes_question($subjectId, $gradeId, $skillIds[$code] ?? null, $passageId, $question, $adminId);
+            }
+        }
+    }
+}
+
+function seed_nafes_question(int $subjectId, int $gradeId, ?int $skillId, ?int $passageId, array $question, ?int $userId): void
+{
+    if (Database::value('SELECT id FROM nafes_questions WHERE subject_id = ? AND grade_id = ? AND stem = ?', [$subjectId, $gradeId, $question[0]])) {
+        return; // السؤال مضاف مسبقاً
+    }
+    if (is_bool($question[1])) {
+        [$stem, $isTrue, $difficulty] = $question;
+        $type    = 'tf';
+        $options = [['body' => 'صح', 'is_correct' => $isTrue]];
+        $explain = $question[3] ?? '';
+    } else {
+        [$stem, $choices, $correct, $difficulty] = $question;
+        $type    = 'mcq';
+        $options = array_map(static fn ($body, $i) => ['body' => $body, 'is_correct' => $i === $correct], $choices, array_keys($choices));
+        $explain = $question[4] ?? '';
+    }
+    QuestionBank::save(null, [
+        'subject_id' => $subjectId, 'grade_id' => $gradeId, 'skill_id' => $skillId, 'passage_id' => $passageId,
+        'type' => $type, 'stem' => $stem, 'difficulty' => $difficulty, 'explanation' => $explain, 'is_active' => 1,
+    ], $options, (int) $userId);
+}
+
+/** بيانات نافس التجريبية: أسئلة ونصوص، وطلاب لفصول صفوف نافس */
+function seed_nafes_demo(): void
+{
+    seed_nafes_bank(true);
+
+    $first = ['عبدالله', 'محمد', 'فيصل', 'سلمان', 'خالد', 'يزن', 'ريان', 'مشعل', 'عبدالرحمن', 'نواف', 'راكان', 'مازن'];
+    $last  = ['العتيبي', 'القحطاني', 'الحربي', 'الغامدي', 'الشهري', 'الدوسري', 'المطيري', 'الزهراني', 'السبيعي', 'العنزي'];
+
+    $gradeIds = Nafes::idList(Settings::get('nafes_grade_ids'));
+    if (!$gradeIds) {
+        return;
+    }
+    $in = implode(',', $gradeIds);
+    $classrooms = Database::all("SELECT c.id FROM classrooms c WHERE c.grade_id IN ($in) ORDER BY c.id");
+
+    $n = 0;
+    foreach ($classrooms as $classroom) {
+        for ($i = 0; $i < 8; $i++, $n++) {
+            $username = 'st' . str_pad((string) ($n + 1), 3, '0', STR_PAD_LEFT);
+            if (Database::value('SELECT id FROM users WHERE username = ?', [$username])) {
+                continue;
+            }
+            Database::insert('users', [
+                'name'          => $first[$n % count($first)] . ' ' . $first[($n * 7 + 3) % count($first)] . ' ' . $last[($n * 3) % count($last)],
+                'username'      => $username,
+                'password_hash' => password_hash('123456', PASSWORD_DEFAULT),
+                'role'          => 'student',
+                'job_title'     => 'طالب',
+                'classroom_id'  => $classroom['id'],
+            ]);
+        }
+    }
+}
+
+/** نتائج تجريبية: اختبار تشخيصي منشور لكل مادة وصف، مع محاولات طلاب بمستويات متفاوتة */
+function seed_nafes_demo_results(): void
+{
+    $adminId = (int) Database::value("SELECT id FROM users WHERE role = 'admin' ORDER BY id LIMIT 1", [], 0);
+    $admin   = Database::first('SELECT * FROM users WHERE id = ?', [$adminId]);
+    if (!$admin) {
+        return;
+    }
+
+    foreach (Nafes::grades() as $grade) {
+        $classIds = array_map('intval', array_column(Database::all('SELECT id FROM classrooms WHERE grade_id = ?', [$grade['id']]), 'id'));
+        if (!$classIds) {
+            continue;
+        }
+        foreach (Nafes::subjects() as $subject) {
+            $available = (int) Database::value(
+                'SELECT COUNT(*) FROM nafes_questions WHERE subject_id = ? AND grade_id = ? AND is_active = 1',
+                [$subject['id'], $grade['id']],
+                0
+            );
+            if ($available < 5) {
+                continue;
+            }
+            [$testId] = Exams::save(null, [
+                'title'      => 'اختبار تشخيصي — ' . $subject['name'],
+                'subject_id' => $subject['id'], 'grade_id' => $grade['id'], 'kind' => 'diagnostic',
+                'instructions' => 'اقرأ كل سؤال بعناية ثم اختر الإجابة الصحيحة.',
+                'duration_min' => 30, 'starts_at' => null, 'ends_at' => null, 'max_attempts' => 1,
+                'shuffle_questions' => 1, 'shuffle_options' => 1, 'show_review' => 1,
+            ], $classIds, $admin);
+            Exams::generate((int) $testId, [], min(12, $available));
+            Exams::setStatus((int) $testId, 'published');
+
+            foreach (Database::all("SELECT * FROM users WHERE role = 'student' AND classroom_id IN (" . implode(',', $classIds) . ')') as $student) {
+                if (random_int(1, 10) === 1) {
+                    continue; // بعض الطلاب لم يختبروا بعد
+                }
+                $ability = random_int(30, 95) / 100;
+                [$attemptId] = Exams::start((int) $testId, $student);
+                if (!$attemptId) {
+                    continue;
+                }
+                $attempt = Exams::attempt($attemptId);
+                foreach (Exams::attemptQuestions($attemptId) as $q) {
+                    $correct = array_values(array_filter($q['options'], static fn ($o) => (int) $o['is_correct'] === 1));
+                    $wrong   = array_values(array_filter($q['options'], static fn ($o) => (int) $o['is_correct'] !== 1));
+                    $hard    = 0.12 * ((int) $q['difficulty'] - 2);
+                    $pick    = (mt_rand() / mt_getrandmax()) < ($ability - $hard) ? ($correct[0] ?? null) : ($wrong[array_rand($wrong)] ?? null);
+                    if ($pick) {
+                        Exams::saveAnswer($attempt, (int) $q['question_id'], (int) $pick['id']);
+                    }
+                }
+                Exams::submit($attemptId);
+            }
+        }
+    }
+}
